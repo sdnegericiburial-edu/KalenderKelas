@@ -27,8 +27,8 @@ function setupDatabase() {
   formatSheetHeader(sheetTeachers, teacherHeaders.length, "#7C3AED");
 
   var sampleTeachers = [
-    ["teacher-1", "Budi Santoso, S.Pd.", "198506122010011005", "Kelas 5-A", "budi.santoso@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#3B82F6"],
-    ["teacher-2", "Hj. Ratna Juwita, S.Pd., M.M.", "198702152012012003", "Kelas 3-A", "ratna.juwita@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#FF5C8D"]
+    ["teacher-1", "Budi Santoso, S.Pd.", "198506122010011005", "Kelas 5-A", "budi.santoso@sekolah.id", "SD NEGERI CIBURIAL", "2026/2027", "Kab. Bandung Barat", "#3B82F6"],
+    ["teacher-2", "Hj. Ratna Juwita, S.Pd., M.M.", "198702152012012003", "Kelas 3-A", "ratna.juwita@sekolah.id", "SD NEGERI CIBURIAL", "2026/2027", "Kab. Bandung Barat", "#FF5C8D"]
   ];
   sheetTeachers.getRange(2, 1, sampleTeachers.length, teacherHeaders.length).setValues(sampleTeachers);
 
@@ -40,7 +40,7 @@ function setupDatabase() {
   formatSheetHeader(sheetSettings, settingHeaders.length, "#DB2777");
 
   var sampleSettings = [
-    ["SD NEGERI CIBURIAL", "Kelas 5-A", "2025/2026", 2025, 2026, "Hj. Siti Rohmah, S.Pd., M.M.", "197203151994032001", "Budi Santoso, S.Pd.", "198506122010011005", "Bandung Barat", ""]
+    ["SD NEGERI CIBURIAL", "Kelas 5-A", "2026/2027", 2026, 2027, "Carnia, S.Pd", "197112201997032002", "Budi Santoso, S.Pd.", "198506122010011005", "Kab. Bandung Barat", ""]
   ];
   sheetSettings.getRange(2, 1, sampleSettings.length, settingHeaders.length).setValues(sampleSettings);
 
@@ -291,8 +291,8 @@ function doGet(e) {
             className: String(tRow[3] || ""),
             email: String(tRow[4] || ""),
             schoolName: String(tRow[5] || ""),
-            academicYear: String(tRow[6] || "2025/2026"),
-            city: String(tRow[7] || "Bandung Barat"),
+            academicYear: String(tRow[6] || "2026/2027"),
+            city: String(tRow[7] || "Kab. Bandung Barat"),
             avatarColor: String(tRow[8] || "#FF5C8D")
           });
         }
@@ -368,8 +368,8 @@ function doPost(e) {
           t.className,
           t.email || "",
           t.schoolName || "",
-          t.academicYear || "2025/2026",
-          t.city || "Bandung Barat",
+          t.academicYear || "2026/2027",
+          t.city || "Kab. Bandung Barat",
           t.avatarColor || "#FF5C8D"
         ];
       });

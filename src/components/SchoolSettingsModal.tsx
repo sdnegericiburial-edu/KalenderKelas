@@ -221,7 +221,7 @@ export const SchoolSettingsModal: React.FC<SchoolSettingsModalProps> = ({
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 className="w-full px-4 py-2.5 bg-yellow-50/50 border-2 border-yellow-200 rounded-full text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                placeholder="contoh: Bandung Barat"
+                placeholder="contoh: Kab. Bandung Barat"
               />
             </div>
           </div>
@@ -230,53 +230,21 @@ export const SchoolSettingsModal: React.FC<SchoolSettingsModalProps> = ({
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
                 <UserCheck className="w-4 h-4 text-pink-600" />
-                Tanda Tangan Pengesahan (Untuk Laporan Cetak)
+                Tanda Tangan Pengesahan Kepala Sekolah
               </h4>
             </div>
-
-            {/* Active Teacher Banner */}
-            {activeTeacher && (
-              <div className="bg-[#FFD166]/20 border-2 border-amber-300 p-3 rounded-2xl flex items-center justify-between gap-3 shadow-2xs">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="w-9 h-9 rounded-full text-white font-black flex items-center justify-center text-xs shrink-0 shadow-2xs border-2 border-white"
-                    style={{ backgroundColor: activeTeacher.avatarColor || "#FF5C8D" }}
-                  >
-                    {activeTeacher.name.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-[9px] font-black text-amber-950 uppercase bg-yellow-200 px-2 py-0.5 rounded-full inline-block mb-0.5">
-                      Akun Guru Aktif Saat Ini
-                    </span>
-                    <p className="text-xs font-black text-slate-900 truncate">{activeTeacher.name}</p>
-                    <p className="text-[10px] font-semibold text-slate-600 truncate">
-                      {activeTeacher.className} • NIP: {activeTeacher.nip || "-"}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSyncActiveTeacher}
-                  className="px-3 py-1.5 bg-pink-500 hover:bg-pink-600 text-white text-[10px] font-black rounded-full cursor-pointer transition-colors shrink-0 flex items-center gap-1 shadow-2xs"
-                  title="Salin Nama, NIP, dan Kelas dari Akun Guru Aktif ke Form Tanda Tangan"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Sesuaikan Data</span>
-                </button>
-              </div>
-            )}
 
             {/* Kepala Sekolah */}
             <div className="bg-yellow-50/70 p-3.5 rounded-2xl space-y-2 border-2 border-yellow-200">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-slate-900 uppercase">1. Penandatangan Kepala Sekolah (Kiri):</span>
+                <span className="text-xs font-black text-slate-900 uppercase">Penandatangan Kepala Sekolah:</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Nama Lengkap Kepala Sekolah</label>
                   <input
                     type="text"
-                    placeholder="contoh: Hj. Siti Rohmah, S.Pd., M.M."
+                    placeholder="contoh: Carnia, S.Pd"
                     value={formData.principalName}
                     onChange={(e) => setFormData({ ...formData, principalName: e.target.value })}
                     className="w-full px-3 py-1.5 bg-white border-2 border-yellow-200 focus:border-pink-500 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
@@ -286,48 +254,9 @@ export const SchoolSettingsModal: React.FC<SchoolSettingsModalProps> = ({
                   <label className="block text-[10px] font-bold text-slate-600 mb-0.5">NIP Kepala Sekolah</label>
                   <input
                     type="text"
-                    placeholder="197203151994032001"
+                    placeholder="197112201997032002"
                     value={formData.principalNip}
                     onChange={(e) => setFormData({ ...formData, principalNip: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border-2 border-yellow-200 focus:border-pink-500 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Guru Kelas */}
-            <div className="bg-yellow-50/70 p-3.5 rounded-2xl space-y-2 border-2 border-yellow-200">
-              <div className="flex items-center justify-between flex-wrap gap-1">
-                <span className="text-xs font-black text-slate-900 uppercase">2. Penandatangan Guru Kelas (Kanan):</span>
-                {activeTeacher && (
-                  <button
-                    type="button"
-                    onClick={handleSyncActiveTeacher}
-                    className="text-[10px] font-black text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 border border-pink-200 px-2 py-0.5 rounded-full cursor-pointer flex items-center gap-1 transition-colors"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Pakai Akun {activeTeacher.name.split(" ")[0]}</span>
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Nama Guru Kelas</label>
-                  <input
-                    type="text"
-                    placeholder="contoh: Ratna Juwita, S.Pd."
-                    value={formData.teacherName}
-                    onChange={(e) => setFormData({ ...formData, teacherName: e.target.value })}
-                    className="w-full px-3 py-1.5 bg-white border-2 border-yellow-200 focus:border-pink-500 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-600 mb-0.5">NIP Guru Kelas</label>
-                  <input
-                    type="text"
-                    placeholder="19870215 201201 2 003"
-                    value={formData.teacherNip}
-                    onChange={(e) => setFormData({ ...formData, teacherNip: e.target.value })}
                     className="w-full px-3 py-1.5 bg-white border-2 border-yellow-200 focus:border-pink-500 rounded-xl text-xs font-bold text-slate-900 focus:outline-none"
                   />
                 </div>

@@ -6,11 +6,11 @@ export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
   academicYear: "2026/2027",
   startYear: 2026,
   endYear: 2027,
-  principalName: "Drs. H. Ahmad Dahlan, M.Pd.",
-  principalNip: "19720315 199603 1 002",
+  principalName: "Carnia, S.Pd",
+  principalNip: "197112201997032002",
   teacherName: "Siti Aminah, S.Pd.",
   teacherNip: "19850812 201001 2 015",
-  city: "Bandung Barat",
+  city: "Kab. Bandung Barat",
 };
 
 export const CATEGORIES: EventCategory[] = [
