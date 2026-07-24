@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #FDFCF0;
+    color: #292524;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+.day-cell-vibrant {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.15s ease-in-out;
+}
+
+.day-cell-vibrant:hover {
+  border-color: #FFD166;
+  transform: translateY(-1px);
+}
+
+.vibrant-card {
+  background: white;
+  border-radius: 16px;
+  border: 2px solid #F3F0D7;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.03);
+}
+

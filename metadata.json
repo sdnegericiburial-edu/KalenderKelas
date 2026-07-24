@@ -1,0 +1,6 @@
+{
+  "name": "Kalender Kegiatan Kelas SD",
+  "description": "Aplikasi pembuat Kalender Pendidikan dan Kegiatan Kelas Sekolah Dasar dengan tampilan semester, agenda keterangan, penanda warna, dan cetak laporan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
