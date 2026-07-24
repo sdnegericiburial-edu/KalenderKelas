@@ -128,14 +128,14 @@ export const AgendaListView: React.FC<AgendaListViewProps> = ({
               <p className="text-xs text-slate-400">Coba ubah kata kunci pencarian atau tambah kegiatan baru.</p>
             </div>
           ) : (
-            sortedEvents.map((evt) => {
+            sortedEvents.map((evt, idx) => {
               const cat = getCategoryInfo(evt.category);
               const formattedRange = formatDateRangeIndonesian(evt.startDate, evt.endDate);
               const hexColor = evt.color || cat.color;
 
               return (
                 <div
-                  key={evt.id}
+                  key={`${evt.id}_list_${idx}`}
                   className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-yellow-50/40 transition-colors"
                 >
                   <div className="flex items-start gap-3 min-w-0">

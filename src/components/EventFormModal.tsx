@@ -8,6 +8,8 @@ interface EventFormModalProps {
   eventToEdit: CalendarEvent | null;
   defaultDate?: string;
   categories?: EventCategory[];
+  activeClassName?: string;
+  availableClasses?: string[];
   onClose: () => void;
   onSave: (event: Omit<CalendarEvent, "id"> & { id?: string }) => void;
 }
@@ -17,6 +19,8 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   eventToEdit,
   defaultDate,
   categories = DEFAULT_CATEGORIES,
+  activeClassName,
+  availableClasses = [],
   onClose,
   onSave,
 }) => {
@@ -28,6 +32,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   const [category, setCategory] = useState<CategoryType>("kegiatan_sekolah");
   const [color, setColor] = useState("#f97316");
   const [semester, setSemester] = useState<1 | 2>(1);
+  const [targetClass, setTargetClass] = useState<string>(activeClassName || "Kelas 5-A");
   const [description, setDescription] = useState("");
 
   useEffect(() => {
@@ -38,6 +43,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
       setCategory(eventToEdit.category);
       setColor(eventToEdit.color || "#f97316");
       setSemester(eventToEdit.semester);
+      setTargetClass(eventToEdit.className || activeClassName || "Kelas 5-A");
       setDescription(eventToEdit.description || "");
     } else {
       const activeDate = defaultDate || todayISO;
@@ -50,9 +56,10 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
       // Auto calculate semester based on month (July-Dec = Semester 1, Jan-June = Semester 2)
       const month = new Date(activeDate).getMonth() + 1;
       setSemester(month >= 7 ? 1 : 2);
+      setTargetClass(activeClassName || "Kelas 5-A");
       setDescription("");
     }
-  }, [eventToEdit, defaultDate, isOpen]);
+  }, [eventToEdit, defaultDate, isOpen, activeClassName]);
 
   if (!isOpen) return null;
 
@@ -75,6 +82,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
       color,
       semester,
       description,
+      className: targetClass,
     });
     onClose();
   };
@@ -183,6 +191,31 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
                 <option value={2}>Semester 2 (Dua)</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-black uppercase text-amber-950 mb-1">
+              Target Kelas / Peruntukan *
+            </label>
+            <select
+              value={targetClass}
+              onChange={(e) => setTargetClass(e.target.value)}
+              className="w-full px-4 py-2.5 bg-yellow-50/50 border-2 border-yellow-200 rounded-full text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+            >
+              {activeClassName && (
+                <option value={activeClassName}>
+                  {activeClassName} (Kelas Saat Ini)
+                </option>
+              )}
+              <option value="Semua Kelas">Semua Kelas (Seluruh Sekolah)</option>
+              {availableClasses
+                ?.filter((c) => c !== activeClassName && c !== "Semua Kelas")
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+            </select>
           </div>
 
           <div>

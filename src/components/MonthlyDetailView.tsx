@@ -142,13 +142,13 @@ export const MonthlyDetailView: React.FC<MonthlyDetailViewProps> = ({
 
                   {/* Event Pills inside Day Cell */}
                   <div className="space-y-1 mt-1 overflow-y-auto max-h-[75px] scrollbar-thin">
-                    {cell.events.map((evt) => {
+                    {cell.events.map((evt, eIdx) => {
                       const cat = getCategoryInfo(evt.category);
                       const bgHex = evt.color || cat.color;
 
                       return (
                         <div
-                          key={evt.id}
+                          key={`${evt.id}_md_${eIdx}`}
                           style={{ backgroundColor: bgHex }}
                           className="text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-2xs flex items-center justify-between gap-1 group/item"
                         >

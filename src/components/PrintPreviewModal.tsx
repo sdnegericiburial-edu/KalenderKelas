@@ -554,8 +554,8 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                     {semester1Events.length === 0 ? (
                       <div className="p-3 text-center text-slate-400 italic">Belum ada agenda semester 1.</div>
                     ) : (
-                      semester1Events.map((evt) => (
-                        <div key={evt.id} className="p-1.5 flex items-start gap-1.5">
+                      semester1Events.map((evt, idx) => (
+                        <div key={`${evt.id}_p1_${idx}`} className="p-1.5 flex items-start gap-1.5">
                           <span
                             className="w-2.5 h-2.5 rounded-full mt-0.5 shrink-0 border border-black/20"
                             style={{ backgroundColor: evt.color || getCategoryInfo(evt.category).color }}
@@ -665,8 +665,8 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                     {semester2Events.length === 0 ? (
                       <div className="p-3 text-center text-slate-400 italic">Belum ada agenda semester 2.</div>
                     ) : (
-                      semester2Events.map((evt) => (
-                        <div key={evt.id} className="p-1.5 flex items-start gap-1.5">
+                      semester2Events.map((evt, idx) => (
+                        <div key={`${evt.id}_p2_${idx}`} className="p-1.5 flex items-start gap-1.5">
                           <span
                             className="w-2.5 h-2.5 rounded-full mt-0.5 shrink-0 border border-black/20"
                             style={{ backgroundColor: evt.color || getCategoryInfo(evt.category).color }}

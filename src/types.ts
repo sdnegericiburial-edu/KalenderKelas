@@ -19,6 +19,7 @@ export interface CalendarEvent {
   description?: string;
   semester: 1 | 2; // Auto-determined or manual
   isNationalHoliday?: boolean;
+  className?: string; // Target class name e.g. "Kelas 5-A", "Kelas 3-A" or "Semua Kelas"
 }
 
 export interface SchoolInfo {

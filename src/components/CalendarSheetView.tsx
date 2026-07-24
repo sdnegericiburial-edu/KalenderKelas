@@ -178,9 +178,9 @@ export const CalendarSheetView: React.FC<CalendarSheetViewProps> = ({
                     Belum ada agenda kegiatan di Semester 1.
                   </div>
                 ) : (
-                  semester1Events.map((evt) => (
+                  semester1Events.map((evt, idx) => (
                     <EventTableRow
-                      key={evt.id}
+                      key={`${evt.id}_s1_${idx}`}
                       event={evt}
                       onEdit={onEditEvent}
                       onDelete={onDeleteEvent}
@@ -205,9 +205,9 @@ export const CalendarSheetView: React.FC<CalendarSheetViewProps> = ({
                     Belum ada agenda kegiatan di Semester 2.
                   </div>
                 ) : (
-                  semester2Events.map((evt) => (
+                  semester2Events.map((evt, idx) => (
                     <EventTableRow
-                      key={evt.id}
+                      key={`${evt.id}_s2_${idx}`}
                       event={evt}
                       onEdit={onEditEvent}
                       onDelete={onDeleteEvent}
@@ -307,8 +307,8 @@ const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
                   <div className="font-bold border-b border-slate-700 pb-1 mb-1 text-pink-400">
                     {cell.dateString}
                   </div>
-                  {cell.events.map((e) => (
-                    <div key={e.id} className="truncate text-yellow-300 font-bold">
+                  {cell.events.map((e, eIdx) => (
+                    <div key={`${e.id}_tt_${eIdx}`} className="truncate text-yellow-300 font-bold">
                       • {e.title}
                     </div>
                   ))}

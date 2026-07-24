@@ -1,40 +1,38 @@
 export const GOOGLE_APPS_SCRIPT_CODE = `/**
  * ====================================================================
  * KALENDER PENDIDIKAN SD - GOOGLE APPS SCRIPT (Code.gs)
+ * Multi-Tab Agendas Per Kelas + Auto-Create / Delete Sheet Tabs
  * ====================================================================
  * Petunjuk Penggunaan:
- * 1. Buka Google Sheets baru di https://sheets.new
+ * 1. Buka Google Sheets di https://sheets.new
  * 2. Klik menu "Ekstensi" -> "Apps Script"
  * 3. Hapus semua kode bawaan, lalu Tempel (Paste) seluruh kode ini di editor.
- * 4. Klik tombol "Jalankan" (Run) pada fungsi "setupDatabase" untuk membuat lembar kerja otomatis.
- * 5. Klik menu "Terapkan" (Deploy) -> "Terapkan sebagai Aplikasi Web" (New Deployment).
+ * 4. Klik tombol "Jalankan" (Run) pada fungsi "setupDatabase" untuk membuat database & sheet kelas otomatis.
+ * 5. Klik "Terapkan" (Deploy) -> "Terapkan sebagai Aplikasi Web" (New Deployment).
  * 6. Pilih:
  *    - Jalankan sebagai: "Saya" (Me)
  *    - Siapa yang memiliki akses: "Siapa saja" (Anyone)
- * 7. Klik "Terapkan", berikan izin akses (Authorize), lalu salin "URL Aplikasi Web" ke dalam aplikasi Kalender.
+ * 7. Salin "URL Aplikasi Web" ke dalam modal Integrasi Google Sheets di aplikasi.
  */
 
 // 1. SETUP DATABASE OTOMATIS
 function setupDatabase() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // Sheet 1: Agendas
-  var sheetAgenda = ss.getSheetByName("Agendas") || ss.insertSheet("Agendas");
-  sheetAgenda.clear();
-  var agendaHeaders = ["ID Agenda", "Judul Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "ID Kategori", "Semester", "Keterangan / Detail", "Warna Hex", "Libur Nasional"];
-  sheetAgenda.getRange(1, 1, 1, agendaHeaders.length).setValues([agendaHeaders]);
-  formatSheetHeader(sheetAgenda, agendaHeaders.length, "#0F172A");
 
-  // Contoh Data Awal Agenda
-  var sampleAgendas = [
-    ["evt_1", "Hari Pertama Masuk Sekolah & MPLS", "2025-07-14", "2025-07-16", "mpls", 1, "Masa Pengenalan Lingkungan Sekolah", "#10b981", false],
-    ["evt_2", "HUT Kemerdekaan RI ke-80", "2025-08-17", "2025-08-17", "libur_nasional", 1, "Upacara Bendera & Peringatan Proklamasi", "#ef4444", true],
-    ["evt_3", "Penilaian Tengah Semester (PTS) 1", "2025-09-22", "2025-09-27", "ujian", 1, "Pelaksanaan Sumatif Tengah Semester", "#f59e0b", false],
-    ["evt_4", "Pembagian Rapor Semester 1", "2025-12-19", "2025-12-19", "rapor", 1, "Penyerahan Laporan Hasil Belajar", "#0284c7", false]
+  // Sheet Teachers
+  var sheetTeachers = ss.getSheetByName("Teachers") || ss.insertSheet("Teachers");
+  sheetTeachers.clear();
+  var teacherHeaders = ["ID Guru", "Nama Lengkap Guru", "NIP", "Pegangan Kelas", "Email", "Nama Sekolah", "Tahun Pelajaran", "Kota / Kabupaten", "Warna Avatar"];
+  sheetTeachers.getRange(1, 1, 1, teacherHeaders.length).setValues([teacherHeaders]);
+  formatSheetHeader(sheetTeachers, teacherHeaders.length, "#7C3AED");
+
+  var sampleTeachers = [
+    ["teacher-1", "Budi Santoso, S.Pd.", "198506122010011005", "Kelas 5-A", "budi.santoso@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#3B82F6"],
+    ["teacher-2", "Hj. Ratna Juwita, S.Pd., M.M.", "198702152012012003", "Kelas 3-A", "ratna.juwita@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#FF5C8D"]
   ];
-  sheetAgenda.getRange(2, 1, sampleAgendas.length, agendaHeaders.length).setValues(sampleAgendas);
+  sheetTeachers.getRange(2, 1, sampleTeachers.length, teacherHeaders.length).setValues(sampleTeachers);
 
-  // Sheet 2: SchoolSettings
+  // Sheet SchoolSettings
   var sheetSettings = ss.getSheetByName("SchoolSettings") || ss.insertSheet("SchoolSettings");
   sheetSettings.clear();
   var settingHeaders = ["Nama Sekolah", "Target Kelas", "Tahun Pelajaran", "Tahun Awal", "Tahun Akhir", "Nama Kepala Sekolah", "NIP Kepala Sekolah", "Nama Guru Kelas", "NIP Guru Kelas", "Kota / Kabupaten", "URL Logo Sekolah"];
@@ -46,7 +44,7 @@ function setupDatabase() {
   ];
   sheetSettings.getRange(2, 1, sampleSettings.length, settingHeaders.length).setValues(sampleSettings);
 
-  // Sheet 3: Categories
+  // Sheet Categories
   var sheetCategories = ss.getSheetByName("Categories") || ss.insertSheet("Categories");
   sheetCategories.clear();
   var categoryHeaders = ["ID Kategori", "Nama Label Kategori", "Kode Warna Hex"];
@@ -65,30 +63,115 @@ function setupDatabase() {
   ];
   sheetCategories.getRange(2, 1, sampleCategories.length, categoryHeaders.length).setValues(sampleCategories);
 
-  // Sheet 4: Teachers
-  var sheetTeachers = ss.getSheetByName("Teachers") || ss.insertSheet("Teachers");
-  sheetTeachers.clear();
-  var teacherHeaders = ["ID Guru", "Nama Lengkap Guru", "NIP", "Pegangan Kelas", "Email", "Nama Sekolah", "Tahun Pelajaran", "Kota / Kabupaten", "Warna Avatar"];
-  sheetTeachers.getRange(1, 1, 1, teacherHeaders.length).setValues([teacherHeaders]);
-  formatSheetHeader(sheetTeachers, teacherHeaders.length, "#7C3AED");
+  // Dynamic Agendas Sheet Per Class
+  var activeClasses = ["Kelas 5-A", "Kelas 3-A"];
+  syncClassAgendaSheets(ss, activeClasses);
 
-  var sampleTeachers = [
-    ["teacher-1", "Budi Santoso, S.Pd.", "198506122010011005", "Kelas 5-A", "budi.santoso@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#3B82F6"],
-    ["teacher-2", "Hj. Ratna Juwita, S.Pd., M.M.", "198702152012012003", "Kelas 3-A", "ratna.juwita@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#FF5C8D"]
-  ];
-  sheetTeachers.getRange(2, 1, sampleTeachers.length, teacherHeaders.length).setValues(sampleTeachers);
+  // Sample Agendas for Kelas 5-A
+  var sheet5A = ss.getSheetByName("Agenda - Kelas 5-A");
+  if (sheet5A) {
+    var sampleAgendas5A = [
+      ["evt_1", "Hari Pertama Masuk Sekolah & MPLS", "2025-07-14", "2025-07-16", "mpls", 1, "Masa Pengenalan Lingkungan Sekolah Kelas 5-A", "#10b981", false, "Kelas 5-A"],
+      ["evt_2", "HUT Kemerdekaan RI ke-80", "2025-08-17", "2025-08-17", "libur_nasional", 1, "Upacara Bendera & Peringatan Proklamasi", "#ef4444", true, "Kelas 5-A"],
+      ["evt_3", "Penilaian Tengah Semester (PTS) 1", "2025-09-22", "2025-09-27", "ujian", 1, "Pelaksanaan Sumatif Tengah Semester Kelas 5-A", "#f59e0b", false, "Kelas 5-A"]
+    ];
+    sheet5A.getRange(2, 1, sampleAgendas5A.length, 10).setValues(sampleAgendas5A);
+  }
 
-  // Hapus Sheet Default "Sheet1" / "Lembar1" jika ada
-  var defaultSheet = ss.getSheetByName("Sheet1") || ss.getSheetByName("Lembar1");
+  // Sample Agendas for Kelas 3-A
+  var sheet3A = ss.getSheetByName("Agenda - Kelas 3-A");
+  if (sheet3A) {
+    var sampleAgendas3A = [
+      ["evt_4", "Pembagian Rapor Semester 1", "2025-12-19", "2025-12-19", "rapor", 1, "Penyerahan Laporan Hasil Belajar Kelas 3-A", "#0284c7", false, "Kelas 3-A"]
+    ];
+    sheet3A.getRange(2, 1, sampleAgendas3A.length, 10).setValues(sampleAgendas3A);
+  }
+
+  // Remove default sheet if present
+  var defaultSheet = ss.getSheetByName("Sheet1") || ss.getSheetByName("Lembar1") || ss.getSheetByName("Agendas");
   if (defaultSheet && ss.getSheets().length > 1) {
     ss.deleteSheet(defaultSheet);
   }
 
   try {
     var ui = SpreadsheetApp.getUi();
-    ui.alert("BERHASIL!\\nDatabase Kalender Pendidikan berhasil dibuat di Google Sheets.\\n\\n4 Tabel telah siap:\\n1. Agendas\\n2. SchoolSettings\\n3. Categories\\n4. Teachers");
+    ui.alert("BERHASIL!\\nDatabase Kalender Pendidikan berhasil dibuat.\\n\\nTabel:\\n1. Teachers\\n2. SchoolSettings\\n3. Categories\\n4. Agenda - Kelas 5-A\\n5. Agenda - Kelas 3-A\\n\\nSetiap kelas memiliki Sheet Agendas tersendiri dan akan otomatis bertambah/terhapus saat Anda menambah/menghapus kelas.");
   } catch (e) {
-    Logger.log("Database berhasil dibuat: Agendas, SchoolSettings, Categories, Teachers");
+    Logger.log("Database berhasil dibuat dengan multi-sheet Agendas per kelas.");
+  }
+}
+
+// 2. HELPER LIST KELAS AKTIF
+function getActiveClassesList(ss, postData) {
+  var classMap = {};
+
+  // Read from postData teachers
+  if (postData && postData.teachers && Array.isArray(postData.teachers)) {
+    for (var i = 0; i < postData.teachers.length; i++) {
+      var cls = String(postData.teachers[i].className || "").trim();
+      if (cls) classMap[cls] = true;
+    }
+  } else {
+    // Read from Teachers sheet
+    var sheetTeachers = ss.getSheetByName("Teachers");
+    if (sheetTeachers && sheetTeachers.getLastRow() > 1) {
+      var tData = sheetTeachers.getRange(2, 1, sheetTeachers.getLastRow() - 1, 9).getValues();
+      for (var j = 0; j < tData.length; j++) {
+        var cName = String(tData[j][3] || "").trim();
+        if (cName) classMap[cName] = true;
+      }
+    }
+  }
+
+  // Include SchoolSettings className
+  if (postData && postData.schoolInfo && postData.schoolInfo.className) {
+    var sc = String(postData.schoolInfo.className || "").trim();
+    if (sc) classMap[sc] = true;
+  } else {
+    var sheetSettings = ss.getSheetByName("SchoolSettings");
+    if (sheetSettings && sheetSettings.getLastRow() > 1) {
+      var sVal = String(sheetSettings.getRange(2, 2, 1, 1).getValue() || "").trim();
+      if (sVal) classMap[sVal] = true;
+    }
+  }
+
+  var list = Object.keys(classMap);
+  if (list.length === 0) list = ["Kelas 5-A"];
+  return list;
+}
+
+// 3. SINKRONISASI SHEET AGENDAS PER KELAS (Tambah / Hapus Sheet Otomatis)
+function syncClassAgendaSheets(ss, activeClassList) {
+  var prefix = "Agenda - ";
+  var desiredSheets = {};
+
+  var agendaHeaders = ["ID Agenda", "Judul Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "ID Kategori", "Semester", "Keterangan / Detail", "Warna Hex", "Libur Nasional", "Nama Kelas"];
+
+  for (var i = 0; i < activeClassList.length; i++) {
+    var targetSheetName = prefix + activeClassList[i];
+    desiredSheets[targetSheetName] = activeClassList[i];
+
+    var sheet = ss.getSheetByName(targetSheetName);
+    if (!sheet) {
+      sheet = ss.insertSheet(targetSheetName);
+      sheet.getRange(1, 1, 1, agendaHeaders.length).setValues([agendaHeaders]);
+      formatSheetHeader(sheet, agendaHeaders.length, "#0F172A");
+    }
+  }
+
+  // Hapus sheet Agenda - <Kelas> yang kelasnya sudah dihapus
+  var allSheets = ss.getSheets();
+  for (var k = 0; k < allSheets.length; k++) {
+    var s = allSheets[k];
+    var sName = s.getName();
+    if (sName.indexOf(prefix) === 0) {
+      if (!desiredSheets[sName]) {
+        // Jangan hapus jika hanya ada 1 sheet tersisa di spreadsheet
+        if (ss.getSheets().length > 1) {
+          ss.deleteSheet(s);
+        }
+      }
+    }
   }
 }
 
@@ -106,30 +189,52 @@ function formatSheetHeader(sheet, numCols, bgColorHex) {
   }
 }
 
-// 2. ENDPOINT GET (Membaca Data dari Google Sheets)
+// 4. ENDPOINT GET (Membaca Data Semua Kelas)
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var activeClassList = getActiveClassesList(ss, null);
+    syncClassAgendaSheets(ss, activeClassList);
 
-    // Read Agendas
-    var sheetAgenda = ss.getSheetByName("Agendas");
+    // Read Agendas from all "Agenda - <Kelas>" sheets
+    var allSheets = ss.getSheets();
     var events = [];
-    if (sheetAgenda && sheetAgenda.getLastRow() > 1) {
-      var agendaData = sheetAgenda.getRange(2, 1, sheetAgenda.getLastRow() - 1, 9).getValues();
-      for (var i = 0; i < agendaData.length; i++) {
-        var row = agendaData[i];
-        if (row[0]) {
-          events.push({
-            id: String(row[0]),
-            title: String(row[1] || ""),
-            startDate: formatDateString(row[2]),
-            endDate: formatDateString(row[3]),
-            category: String(row[4] || "kegiatan_sekolah"),
-            semester: Number(row[5]) || 1,
-            description: String(row[6] || ""),
-            color: String(row[7] || "#3b82f6"),
-            isNationalHoliday: Boolean(row[8])
-          });
+    var seenKeys = {};
+
+    for (var sIdx = 0; sIdx < allSheets.length; sIdx++) {
+      var sheet = allSheets[sIdx];
+      var sName = sheet.getName();
+
+      if (sName.indexOf("Agenda - ") === 0 || sName === "Agendas") {
+        var defaultClassForSheet = sName.replace("Agenda - ", "");
+        if (sName === "Agendas") defaultClassForSheet = "";
+
+        if (sheet.getLastRow() > 1) {
+          var aData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
+          for (var i = 0; i < aData.length; i++) {
+            var row = aData[i];
+            if (row[0]) {
+              var evtId = String(row[0]);
+              var evtClass = String(row[9] || defaultClassForSheet);
+              var key = evtId + "_" + evtClass;
+
+              if (!seenKeys[key]) {
+                seenKeys[key] = true;
+                events.push({
+                  id: evtId,
+                  title: String(row[1] || ""),
+                  startDate: formatDateString(row[2]),
+                  endDate: formatDateString(row[3]),
+                  category: String(row[4] || "kegiatan_sekolah"),
+                  semester: Number(row[5]) || 1,
+                  description: String(row[6] || ""),
+                  color: String(row[7] || "#3b82f6"),
+                  isNationalHoliday: Boolean(row[8]),
+                  className: evtClass
+                });
+              }
+            }
+          }
         }
       }
     }
@@ -207,7 +312,7 @@ function doGet(e) {
   }
 }
 
-// 3. ENDPOINT POST (Menyimpan / Menimpa Data ke Google Sheets)
+// 5. ENDPOINT POST (Simpan Data + Auto Tambah / Hapus Sheet Kelas)
 function doPost(e) {
   try {
     var postData = JSON.parse(e.postData.contents);
@@ -233,30 +338,6 @@ function doPost(e) {
         s.city || "",
         s.schoolLogoUrl || ""
       ]);
-    }
-
-    // Update Agendas
-    if (postData.events && Array.isArray(postData.events)) {
-      var sheetAgenda = ss.getSheetByName("Agendas") || ss.insertSheet("Agendas");
-      if (sheetAgenda.getLastRow() > 1) {
-        sheetAgenda.deleteRows(2, sheetAgenda.getLastRow() - 1);
-      }
-      var rowsToAppend = postData.events.map(function(e) {
-        return [
-          e.id,
-          e.title,
-          e.startDate,
-          e.endDate,
-          e.category,
-          e.semester || 1,
-          e.description || "",
-          e.color || "#3b82f6",
-          e.isNationalHoliday ? true : false
-        ];
-      });
-      if (rowsToAppend.length > 0) {
-        sheetAgenda.getRange(2, 1, rowsToAppend.length, 9).setValues(rowsToAppend);
-      }
     }
 
     // Update Categories
@@ -297,9 +378,57 @@ function doPost(e) {
       }
     }
 
+    // Dapatkan daftar semua kelas aktif saat ini
+    var activeClassList = getActiveClassesList(ss, postData);
+
+    // Otomatis Tambah / Hapus Sheet Agenda per Kelas!
+    syncClassAgendaSheets(ss, activeClassList);
+
+    // Update Agendas per Kelas
+    if (postData.events && Array.isArray(postData.events)) {
+      for (var cIdx = 0; cIdx < activeClassList.length; cIdx++) {
+        var currentClass = activeClassList[cIdx];
+        var sheetName = "Agenda - " + currentClass;
+        var sheetAgenda = ss.getSheetByName(sheetName);
+
+        if (sheetAgenda) {
+          if (sheetAgenda.getLastRow() > 1) {
+            sheetAgenda.deleteRows(2, sheetAgenda.getLastRow() - 1);
+          }
+
+          // Filter events untuk kelas ini
+          var classEvents = postData.events.filter(function(ev) {
+            if (!ev.className || ev.className === "Semua Kelas" || ev.className === currentClass) {
+              return true;
+            }
+            return false;
+          });
+
+          var rowsToAppend = classEvents.map(function(e) {
+            return [
+              e.id,
+              e.title,
+              e.startDate,
+              e.endDate,
+              e.category,
+              e.semester || 1,
+              e.description || "",
+              e.color || "#3b82f6",
+              e.isNationalHoliday ? true : false,
+              e.className || currentClass
+            ];
+          });
+
+          if (rowsToAppend.length > 0) {
+            sheetAgenda.getRange(2, 1, rowsToAppend.length, 10).setValues(rowsToAppend);
+          }
+        }
+      }
+    }
+
     return respondJSON({
       status: "success",
-      message: "Data berhasil disinkronkan ke Google Sheets!",
+      message: "Data berhasil disinkronkan ke Google Sheets! Sheet Agendas per kelas telah diperbarui.",
       timestamp: new Date().toISOString()
     });
   } catch (err) {

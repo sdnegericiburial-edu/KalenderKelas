@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { SchoolInfo, CalendarEvent, ViewMode, TeacherUser, EventCategory } from "./types";
 import { DEFAULT_SCHOOL_INFO, INITIAL_EVENTS, CATEGORIES } from "./data/initialData";
 import { downloadFile, exportEventsToCSV } from "./utils/calendarUtils";
@@ -58,6 +58,19 @@ const INITIAL_TEACHERS: TeacherUser[] = [
   }
 ];
 
+function ensureUniqueEventIds(eventsList: CalendarEvent[]): CalendarEvent[] {
+  if (!Array.isArray(eventsList)) return [];
+  const seenIds = new Set<string>();
+  return eventsList.map((evt, idx) => {
+    let uniqueId = evt.id;
+    if (!uniqueId || seenIds.has(uniqueId)) {
+      uniqueId = `${evt.id || "ev"}_${idx}_${Math.random().toString(36).substring(2, 6)}`;
+    }
+    seenIds.add(uniqueId);
+    return { ...evt, id: uniqueId };
+  });
+}
+
 export default function App() {
   // 1. Teachers state
   const [teachers, setTeachers] = useState<TeacherUser[]>(() => {
@@ -95,10 +108,15 @@ export default function App() {
     };
   });
 
-  // 3. Events State (Dynamic per active teacher)
+  // 3. Events State (Global events repository across classes)
   const [events, setEvents] = useState<CalendarEvent[]>(() => {
+    const savedAll = localStorage.getItem("kalender_sd_events_all");
+    if (savedAll) {
+      return ensureUniqueEventIds(JSON.parse(savedAll));
+    }
     const saved = localStorage.getItem(`kalender_sd_events_${activeTeacher.id}`);
-    return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    const rawEvents = saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    return ensureUniqueEventIds(rawEvents);
   });
 
   // 4. Event Categories State (Dynamic & Persistent)
@@ -107,14 +125,35 @@ export default function App() {
     return saved ? JSON.parse(saved) : CATEGORIES;
   });
 
+  // Active teacher class & event filter
+  const activeClassName = activeTeacher?.className || schoolInfo?.className || "";
+
+  const availableClasses = useMemo(() => {
+    const classSet = new Set<string>();
+    if (activeClassName) classSet.add(activeClassName);
+    teachers.forEach((t) => {
+      if (t.className) classSet.add(t.className);
+    });
+    return Array.from(classSet);
+  }, [teachers, activeClassName]);
+
+  const currentClassEvents = useMemo(() => {
+    if (!activeClassName) return events;
+    return events.filter((e) => {
+      if (!e.className) return true; // show unassigned/legacy events
+      if (e.className === "Semua Kelas") return true; // show school-wide events
+      return e.className === activeClassName;
+    });
+  }, [events, activeClassName]);
+
   // Update localStorage when schoolInfo, events, or categories change
   useEffect(() => {
     localStorage.setItem(`kalender_sd_info_${activeTeacher.id}`, JSON.stringify(schoolInfo));
   }, [schoolInfo, activeTeacher.id]);
 
   useEffect(() => {
-    localStorage.setItem(`kalender_sd_events_${activeTeacher.id}`, JSON.stringify(events));
-  }, [events, activeTeacher.id]);
+    localStorage.setItem("kalender_sd_events_all", JSON.stringify(events));
+  }, [events]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_CATEGORIES_KEY, JSON.stringify(categories));
@@ -157,14 +196,6 @@ export default function App() {
         schoolName: teacher.schoolName,
         academicYear: teacher.academicYear,
       });
-    }
-
-    // Load or initialize events for selected teacher
-    const savedEvents = localStorage.getItem(`kalender_sd_events_${teacher.id}`);
-    if (savedEvents) {
-      setEvents(JSON.parse(savedEvents));
-    } else {
-      setEvents(INITIAL_EVENTS);
     }
   };
 
@@ -273,7 +304,7 @@ export default function App() {
         const data = await res.json();
         if (data.status === "success") {
           if (data.schoolInfo && data.schoolInfo.schoolName) setSchoolInfo(data.schoolInfo);
-          if (Array.isArray(data.events) && data.events.length > 0) setEvents(data.events);
+          if (Array.isArray(data.events) && data.events.length > 0) setEvents(ensureUniqueEventIds(data.events));
           if (Array.isArray(data.categories) && data.categories.length > 0) setCategories(data.categories);
           if (Array.isArray(data.teachers) && data.teachers.length > 0) {
             setTeachers(data.teachers);
@@ -292,7 +323,7 @@ export default function App() {
 
   const handleImportFromSheets = (data: { schoolInfo?: SchoolInfo; events?: CalendarEvent[]; categories?: EventCategory[]; teachers?: TeacherUser[] }) => {
     if (data.schoolInfo) setSchoolInfo(data.schoolInfo);
-    if (data.events) setEvents(data.events);
+    if (data.events) setEvents(ensureUniqueEventIds(data.events));
     if (data.categories) setCategories(data.categories);
     if (data.teachers && data.teachers.length > 0) {
       setTeachers(data.teachers);
@@ -354,16 +385,17 @@ export default function App() {
       };
       updatedEvents = [...events, newEvt];
     }
-    setEvents(updatedEvents);
-    syncAllDataToSheets(undefined, updatedEvents);
+    const cleanEvents = ensureUniqueEventIds(updatedEvents);
+    setEvents(cleanEvents);
+    syncAllDataToSheets(undefined, cleanEvents);
   };
 
   const handleBatchAddEvents = (newEvents: Omit<CalendarEvent, "id">[]) => {
     const created: CalendarEvent[] = newEvents.map((ne, idx) => ({
       ...ne,
-      id: `ev-ai-${Date.now()}-${idx}`,
+      id: `ev-ai-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
     }));
-    const updatedEvents = [...events, ...created];
+    const updatedEvents = ensureUniqueEventIds([...events, ...created]);
     setEvents(updatedEvents);
     syncAllDataToSheets(undefined, updatedEvents);
   };
@@ -391,6 +423,7 @@ export default function App() {
       };
       setSchoolInfo(resetInfo);
       setEvents(INITIAL_EVENTS);
+      syncAllDataToSheets(resetInfo, INITIAL_EVENTS);
     }
   };
 
@@ -426,9 +459,11 @@ export default function App() {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.events && Array.isArray(parsed.events)) {
-          setEvents(parsed.events);
+          const clean = ensureUniqueEventIds(parsed.events);
+          setEvents(clean);
           if (parsed.schoolInfo) setSchoolInfo(parsed.schoolInfo);
-          alert("Data kalender kelas berhasil diimpor!");
+          syncAllDataToSheets(parsed.schoolInfo || schoolInfo, clean);
+          alert("Data kalender kelas berhasil diimpor dan disinkronkan ke Google Sheets!");
         } else {
           alert("Format file JSON tidak sesuai.");
         }
@@ -466,7 +501,7 @@ export default function App() {
         {activeView === "sheet" && (
           <CalendarSheetView
             schoolInfo={schoolInfo}
-            events={events}
+            events={currentClassEvents}
             onDateClick={(dateStr) => handleOpenAddEvent(dateStr)}
             onEditEvent={handleOpenEditEvent}
             onDeleteEvent={handleDeleteEvent}
@@ -477,7 +512,7 @@ export default function App() {
         {activeView === "monthly" && (
           <MonthlyDetailView
             schoolInfo={schoolInfo}
-            events={events}
+            events={currentClassEvents}
             onAddEvent={(dateStr) => handleOpenAddEvent(dateStr)}
             onEditEvent={handleOpenEditEvent}
             onDeleteEvent={handleDeleteEvent}
@@ -487,7 +522,7 @@ export default function App() {
         {activeView === "agenda" && (
           <AgendaListView
             schoolInfo={schoolInfo}
-            events={events}
+            events={currentClassEvents}
             onAddEvent={() => handleOpenAddEvent()}
             onEditEvent={handleOpenEditEvent}
             onDeleteEvent={handleDeleteEvent}
@@ -551,6 +586,8 @@ export default function App() {
         eventToEdit={eventToEdit}
         defaultDate={defaultDateForNewEvent}
         categories={categories}
+        activeClassName={activeClassName}
+        availableClasses={availableClasses}
         onClose={() => setIsEventFormOpen(false)}
         onSave={handleSaveEvent}
       />
@@ -558,7 +595,7 @@ export default function App() {
       <PrintPreviewModal
         isOpen={isPrintModalOpen}
         schoolInfo={schoolInfo}
-        events={events}
+        events={currentClassEvents}
         categories={categories}
         onClose={() => setIsPrintModalOpen(false)}
       />
