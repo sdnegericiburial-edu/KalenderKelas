@@ -219,6 +219,44 @@ export default function App() {
     if (data.categories) setCategories(data.categories);
   };
 
+  const handleSaveSchoolInfo = async (newInfo: SchoolInfo) => {
+    setSchoolInfo(newInfo);
+
+    // Sync back to active teacher profile if changed
+    const updatedTeacher: TeacherUser = {
+      ...activeTeacher,
+      name: newInfo.teacherName || activeTeacher.name,
+      nip: newInfo.teacherNip || activeTeacher.nip,
+      className: newInfo.className || activeTeacher.className,
+      schoolName: newInfo.schoolName || activeTeacher.schoolName,
+      city: newInfo.city || activeTeacher.city,
+    };
+
+    setActiveTeacher(updatedTeacher);
+    setTeachers((prev) => prev.map((t) => (t.id === updatedTeacher.id ? updatedTeacher : t)));
+
+    // Auto-sync to Google Sheets if webAppUrl is configured
+    if (sheetsConfig.webAppUrl) {
+      try {
+        await fetch(sheetsConfig.webAppUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "save",
+            schoolInfo: newInfo,
+            events: events,
+            categories: categories,
+          }),
+        });
+
+        const now = new Date().toLocaleString("id-ID");
+        setSheetsConfig((prev) => ({ ...prev, lastSyncedAt: now }));
+      } catch (err) {
+        console.error("Gagal sinkronisasi otomatis ke Google Sheets:", err);
+      }
+    }
+  };
+
   // Modals state
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -412,8 +450,10 @@ export default function App() {
       <SchoolSettingsModal
         isOpen={isSettingsOpen}
         schoolInfo={schoolInfo}
+        activeTeacher={activeTeacher}
+        sheetsConfig={sheetsConfig}
         onClose={() => setIsSettingsOpen(false)}
-        onSave={setSchoolInfo}
+        onSave={handleSaveSchoolInfo}
         onOpenCategoryManager={() => setIsCategoryManagerOpen(true)}
         onOpenSheetsSync={() => setIsSheetsSyncOpen(true)}
       />
