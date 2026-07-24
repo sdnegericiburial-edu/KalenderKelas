@@ -205,13 +205,47 @@ export default function App() {
 
   // 5. Google Sheets Sync Config State
   const [sheetsConfig, setSheetsConfig] = useState<GoogleSheetsConfig>(() => {
+    // Check URL search params for ?db= URL
+    const params = new URLSearchParams(window.location.search);
+    const dbUrlParam = params.get("db");
+
     const saved = localStorage.getItem(STORAGE_SHEETS_CONFIG_KEY);
-    return saved ? JSON.parse(saved) : { webAppUrl: "", autoSync: false };
+    const parsed = saved ? JSON.parse(saved) : { webAppUrl: "", autoSync: false };
+
+    if (dbUrlParam) {
+      return { ...parsed, webAppUrl: dbUrlParam };
+    }
+    return parsed;
   });
 
   useEffect(() => {
     localStorage.setItem(STORAGE_SHEETS_CONFIG_KEY, JSON.stringify(sheetsConfig));
   }, [sheetsConfig]);
+
+  // Auto-fetch data from Google Sheets on initial load if webAppUrl is configured
+  useEffect(() => {
+    if (!sheetsConfig.webAppUrl) return;
+
+    const fetchLatestFromSheets = async () => {
+      try {
+        const res = await fetch(sheetsConfig.webAppUrl);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === "success") {
+          if (data.schoolInfo && data.schoolInfo.schoolName) setSchoolInfo(data.schoolInfo);
+          if (Array.isArray(data.events) && data.events.length > 0) setEvents(data.events);
+          if (Array.isArray(data.categories) && data.categories.length > 0) setCategories(data.categories);
+          
+          const now = new Date().toLocaleString("id-ID");
+          setSheetsConfig((prev) => ({ ...prev, lastSyncedAt: now }));
+        }
+      } catch (e) {
+        console.warn("Auto-sync load on startup failed:", e);
+      }
+    };
+
+    fetchLatestFromSheets();
+  }, [sheetsConfig.webAppUrl]);
 
   const handleImportFromSheets = (data: { schoolInfo?: SchoolInfo; events?: CalendarEvent[]; categories?: EventCategory[] }) => {
     if (data.schoolInfo) setSchoolInfo(data.schoolInfo);
