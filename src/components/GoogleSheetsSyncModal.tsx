@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SchoolInfo, CalendarEvent, EventCategory, GoogleSheetsConfig } from "../types";
+import { SchoolInfo, CalendarEvent, EventCategory, GoogleSheetsConfig, TeacherUser } from "../types";
 import { GOOGLE_APPS_SCRIPT_CODE } from "../data/gasCode";
 import {
   X,
@@ -23,9 +23,10 @@ interface GoogleSheetsSyncModalProps {
   schoolInfo: SchoolInfo;
   events: CalendarEvent[];
   categories: EventCategory[];
+  teachers?: TeacherUser[];
   onClose: () => void;
   onSaveConfig: (config: GoogleSheetsConfig) => void;
-  onImportData: (data: { schoolInfo?: SchoolInfo; events?: CalendarEvent[]; categories?: EventCategory[] }) => void;
+  onImportData: (data: { schoolInfo?: SchoolInfo; events?: CalendarEvent[]; categories?: EventCategory[]; teachers?: TeacherUser[] }) => void;
 }
 
 export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
@@ -34,6 +35,7 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
   schoolInfo,
   events,
   categories,
+  teachers = [],
   onClose,
   onSaveConfig,
   onImportData,
@@ -91,11 +93,13 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
         const importedSchool = data.schoolInfo && data.schoolInfo.schoolName ? data.schoolInfo : undefined;
         const importedEvents = Array.isArray(data.events) && data.events.length > 0 ? data.events : undefined;
         const importedCategories = Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : undefined;
+        const importedTeachers = Array.isArray(data.teachers) && data.teachers.length > 0 ? data.teachers : undefined;
 
         onImportData({
           schoolInfo: importedSchool,
           events: importedEvents,
           categories: importedCategories,
+          teachers: importedTeachers,
         });
 
         const now = new Date().toLocaleString("id-ID");
@@ -107,7 +111,7 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
 
         setStatusMessage({
           type: "success",
-          text: `Berhasil mengambil data dari Google Sheets! (${data.events?.length || 0} Agenda, ${data.categories?.length || 0} Kategori)`,
+          text: `Berhasil mengambil data dari Google Sheets! (${data.events?.length || 0} Agenda, ${data.teachers?.length || 0} Akun Guru)`,
         });
       } else {
         throw new Error(data.message || "Gagal mengambil data dari Google Sheets.");
@@ -142,6 +146,7 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
         schoolInfo: schoolInfo,
         events: events,
         categories: categories,
+        teachers: teachers,
       };
 
       const response = await fetch(webAppUrl.trim(), {
@@ -168,7 +173,7 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
 
         setStatusMessage({
           type: "success",
-          text: `Berhasil menyimpan data ke Google Sheets! (${events.length} Agenda tersimpan)`,
+          text: `Berhasil menyimpan data ke Google Sheets! (${events.length} Agenda, ${teachers.length} Guru tersimpan)`,
         });
       } else {
         throw new Error(data.message || "Gagal menyimpan data ke Google Sheets.");

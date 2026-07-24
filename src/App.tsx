@@ -123,17 +123,21 @@ export default function App() {
   // Category Management Handlers
   const handleAddCategory = (newCat: Omit<EventCategory, "id">) => {
     const id = `cat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    setCategories((prev) => [...prev, { id, ...newCat }]);
+    const updated = [...categories, { id, ...newCat }];
+    setCategories(updated);
+    syncAllDataToSheets(undefined, undefined, updated);
   };
 
   const handleEditCategory = (id: string, updated: Omit<EventCategory, "id">) => {
-    setCategories((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...updated } : c))
-    );
+    const updatedCategories = categories.map((c) => (c.id === id ? { ...c, ...updated } : c));
+    setCategories(updatedCategories);
+    syncAllDataToSheets(undefined, undefined, updatedCategories);
   };
 
   const handleDeleteCategory = (id: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    const updatedCategories = categories.filter((c) => c.id !== id);
+    setCategories(updatedCategories);
+    syncAllDataToSheets(undefined, undefined, updatedCategories);
   };
 
   // Switch Teacher Handler
@@ -164,25 +168,59 @@ export default function App() {
     }
   };
 
+  // Helper function to sync all 4 datasets (schoolInfo, events, categories, teachers) to Google Sheets
+  const syncAllDataToSheets = async (
+    overrideSchoolInfo?: SchoolInfo,
+    overrideEvents?: CalendarEvent[],
+    overrideCategories?: EventCategory[],
+    overrideTeachers?: TeacherUser[]
+  ) => {
+    if (!sheetsConfig.webAppUrl) return;
+    try {
+      const payload = {
+        action: "save",
+        schoolInfo: overrideSchoolInfo || schoolInfo,
+        events: overrideEvents || events,
+        categories: overrideCategories || categories,
+        teachers: overrideTeachers || teachers,
+      };
+      await fetch(sheetsConfig.webAppUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+      });
+
+      const now = new Date().toLocaleString("id-ID");
+      setSheetsConfig((prev) => ({ ...prev, lastSyncedAt: now }));
+    } catch (err) {
+      console.error("Gagal sinkronisasi otomatis ke Google Sheets:", err);
+    }
+  };
+
   const handleAddTeacher = (newTeacher: TeacherUser) => {
-    setTeachers((prev) => [...prev, newTeacher]);
+    const updatedTeachers = [...teachers, newTeacher];
+    setTeachers(updatedTeachers);
+    syncAllDataToSheets(undefined, undefined, undefined, updatedTeachers);
   };
 
   const handleUpdateTeacher = (updatedTeacher: TeacherUser) => {
-    setTeachers((prev) =>
-      prev.map((t) => (t.id === updatedTeacher.id ? updatedTeacher : t))
-    );
+    const updatedTeachers = teachers.map((t) => (t.id === updatedTeacher.id ? updatedTeacher : t));
+    setTeachers(updatedTeachers);
 
+    let updatedSchool = schoolInfo;
     if (updatedTeacher.id === activeTeacher.id) {
       setActiveTeacher(updatedTeacher);
-      setSchoolInfo((prev) => ({
-        ...prev,
+      updatedSchool = {
+        ...schoolInfo,
         teacherName: updatedTeacher.name,
         teacherNip: updatedTeacher.nip,
         className: updatedTeacher.className,
         schoolName: updatedTeacher.schoolName,
-      }));
+      };
+      setSchoolInfo(updatedSchool);
     }
+
+    syncAllDataToSheets(updatedSchool, undefined, undefined, updatedTeachers);
   };
 
   const handleDeleteTeacher = (teacherId: string) => {
@@ -198,6 +236,8 @@ export default function App() {
       const newActive = remaining[0];
       handleSelectTeacher(newActive);
     }
+
+    syncAllDataToSheets(undefined, undefined, undefined, remaining);
   };
 
   // Active View Tab State
@@ -235,6 +275,9 @@ export default function App() {
           if (data.schoolInfo && data.schoolInfo.schoolName) setSchoolInfo(data.schoolInfo);
           if (Array.isArray(data.events) && data.events.length > 0) setEvents(data.events);
           if (Array.isArray(data.categories) && data.categories.length > 0) setCategories(data.categories);
+          if (Array.isArray(data.teachers) && data.teachers.length > 0) {
+            setTeachers(data.teachers);
+          }
           
           const now = new Date().toLocaleString("id-ID");
           setSheetsConfig((prev) => ({ ...prev, lastSyncedAt: now }));
@@ -247,10 +290,13 @@ export default function App() {
     fetchLatestFromSheets();
   }, [sheetsConfig.webAppUrl]);
 
-  const handleImportFromSheets = (data: { schoolInfo?: SchoolInfo; events?: CalendarEvent[]; categories?: EventCategory[] }) => {
+  const handleImportFromSheets = (data: { schoolInfo?: SchoolInfo; events?: CalendarEvent[]; categories?: EventCategory[]; teachers?: TeacherUser[] }) => {
     if (data.schoolInfo) setSchoolInfo(data.schoolInfo);
     if (data.events) setEvents(data.events);
     if (data.categories) setCategories(data.categories);
+    if (data.teachers && data.teachers.length > 0) {
+      setTeachers(data.teachers);
+    }
   };
 
   const handleSaveSchoolInfo = async (newInfo: SchoolInfo) => {
@@ -267,28 +313,10 @@ export default function App() {
     };
 
     setActiveTeacher(updatedTeacher);
-    setTeachers((prev) => prev.map((t) => (t.id === updatedTeacher.id ? updatedTeacher : t)));
+    const updatedTeachers = teachers.map((t) => (t.id === updatedTeacher.id ? updatedTeacher : t));
+    setTeachers(updatedTeachers);
 
-    // Auto-sync to Google Sheets if webAppUrl is configured
-    if (sheetsConfig.webAppUrl) {
-      try {
-        await fetch(sheetsConfig.webAppUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "save",
-            schoolInfo: newInfo,
-            events: events,
-            categories: categories,
-          }),
-        });
-
-        const now = new Date().toLocaleString("id-ID");
-        setSheetsConfig((prev) => ({ ...prev, lastSyncedAt: now }));
-      } catch (err) {
-        console.error("Gagal sinkronisasi otomatis ke Google Sheets:", err);
-      }
-    }
+    await syncAllDataToSheets(newInfo, undefined, undefined, updatedTeachers);
   };
 
   // Modals state
@@ -314,19 +342,20 @@ export default function App() {
   };
 
   const handleSaveEvent = (eventData: Omit<CalendarEvent, "id"> & { id?: string }) => {
+    let updatedEvents: CalendarEvent[];
     if (eventData.id) {
       // Update existing
-      setEvents((prev) =>
-        prev.map((e) => (e.id === eventData.id ? ({ ...e, ...eventData } as CalendarEvent) : e))
-      );
+      updatedEvents = events.map((e) => (e.id === eventData.id ? ({ ...e, ...eventData } as CalendarEvent) : e));
     } else {
       // Add new
       const newEvt: CalendarEvent = {
         ...eventData,
         id: `ev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       };
-      setEvents((prev) => [...prev, newEvt]);
+      updatedEvents = [...events, newEvt];
     }
+    setEvents(updatedEvents);
+    syncAllDataToSheets(undefined, updatedEvents);
   };
 
   const handleBatchAddEvents = (newEvents: Omit<CalendarEvent, "id">[]) => {
@@ -334,12 +363,16 @@ export default function App() {
       ...ne,
       id: `ev-ai-${Date.now()}-${idx}`,
     }));
-    setEvents((prev) => [...prev, ...created]);
+    const updatedEvents = [...events, ...created];
+    setEvents(updatedEvents);
+    syncAllDataToSheets(undefined, updatedEvents);
   };
 
   const handleDeleteEvent = (id: string) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus agenda kegiatan ini?")) {
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+      const updatedEvents = events.filter((e) => e.id !== id);
+      setEvents(updatedEvents);
+      syncAllDataToSheets(undefined, updatedEvents);
     }
   };
 
@@ -507,6 +540,7 @@ export default function App() {
         schoolInfo={schoolInfo}
         events={events}
         categories={categories}
+        teachers={teachers}
         onClose={() => setIsSheetsSyncOpen(false)}
         onSaveConfig={setSheetsConfig}
         onImportData={handleImportFromSheets}

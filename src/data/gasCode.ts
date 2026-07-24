@@ -65,6 +65,19 @@ function setupDatabase() {
   ];
   sheetCategories.getRange(2, 1, sampleCategories.length, categoryHeaders.length).setValues(sampleCategories);
 
+  // Sheet 4: Teachers
+  var sheetTeachers = ss.getSheetByName("Teachers") || ss.insertSheet("Teachers");
+  sheetTeachers.clear();
+  var teacherHeaders = ["ID Guru", "Nama Lengkap Guru", "NIP", "Pegangan Kelas", "Email", "Nama Sekolah", "Tahun Pelajaran", "Kota / Kabupaten", "Warna Avatar"];
+  sheetTeachers.getRange(1, 1, 1, teacherHeaders.length).setValues([teacherHeaders]);
+  formatSheetHeader(sheetTeachers, teacherHeaders.length, "#7C3AED");
+
+  var sampleTeachers = [
+    ["teacher-1", "Budi Santoso, S.Pd.", "198506122010011005", "Kelas 5-A", "budi.santoso@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#3B82F6"],
+    ["teacher-2", "Hj. Ratna Juwita, S.Pd., M.M.", "198702152012012003", "Kelas 3-A", "ratna.juwita@sekolah.id", "SD NEGERI CIBURIAL", "2025/2026", "Bandung Barat", "#FF5C8D"]
+  ];
+  sheetTeachers.getRange(2, 1, sampleTeachers.length, teacherHeaders.length).setValues(sampleTeachers);
+
   // Hapus Sheet Default "Sheet1" / "Lembar1" jika ada
   var defaultSheet = ss.getSheetByName("Sheet1") || ss.getSheetByName("Lembar1");
   if (defaultSheet && ss.getSheets().length > 1) {
@@ -73,9 +86,9 @@ function setupDatabase() {
 
   try {
     var ui = SpreadsheetApp.getUi();
-    ui.alert("BERHASIL!\\nDatabase Kalender Pendidikan berhasil dibuat di Google Sheets.\\n\\n3 Tabel telah siap:\\n1. Agendas\\n2. SchoolSettings\\n3. Categories");
+    ui.alert("BERHASIL!\\nDatabase Kalender Pendidikan berhasil dibuat di Google Sheets.\\n\\n4 Tabel telah siap:\\n1. Agendas\\n2. SchoolSettings\\n3. Categories\\n4. Teachers");
   } catch (e) {
-    Logger.log("Database berhasil dibuat: Agendas, SchoolSettings, Categories");
+    Logger.log("Database berhasil dibuat: Agendas, SchoolSettings, Categories, Teachers");
   }
 }
 
@@ -158,11 +171,35 @@ function doGet(e) {
       }
     }
 
+    // Read Teachers
+    var sheetTeachers = ss.getSheetByName("Teachers");
+    var teachers = [];
+    if (sheetTeachers && sheetTeachers.getLastRow() > 1) {
+      var tData = sheetTeachers.getRange(2, 1, sheetTeachers.getLastRow() - 1, 9).getValues();
+      for (var j = 0; j < tData.length; j++) {
+        var tRow = tData[j];
+        if (tRow[0]) {
+          teachers.push({
+            id: String(tRow[0]),
+            name: String(tRow[1] || ""),
+            nip: String(tRow[2] || "-"),
+            className: String(tRow[3] || ""),
+            email: String(tRow[4] || ""),
+            schoolName: String(tRow[5] || ""),
+            academicYear: String(tRow[6] || "2025/2026"),
+            city: String(tRow[7] || "Bandung Barat"),
+            avatarColor: String(tRow[8] || "#FF5C8D")
+          });
+        }
+      }
+    }
+
     return respondJSON({
       status: "success",
       schoolInfo: schoolInfo,
       events: events,
       categories: categories,
+      teachers: teachers,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -233,6 +270,30 @@ function doPost(e) {
       });
       if (catRowsToAppend.length > 0) {
         sheetCategories.getRange(2, 1, catRowsToAppend.length, 3).setValues(catRowsToAppend);
+      }
+    }
+
+    // Update Teachers
+    if (postData.teachers && Array.isArray(postData.teachers)) {
+      var sheetTeachers = ss.getSheetByName("Teachers") || ss.insertSheet("Teachers");
+      if (sheetTeachers.getLastRow() > 1) {
+        sheetTeachers.deleteRows(2, sheetTeachers.getLastRow() - 1);
+      }
+      var teacherRowsToAppend = postData.teachers.map(function(t) {
+        return [
+          t.id,
+          t.name,
+          t.nip || "-",
+          t.className,
+          t.email || "",
+          t.schoolName || "",
+          t.academicYear || "2025/2026",
+          t.city || "Bandung Barat",
+          t.avatarColor || "#FF5C8D"
+        ];
+      });
+      if (teacherRowsToAppend.length > 0) {
+        sheetTeachers.getRange(2, 1, teacherRowsToAppend.length, 9).setValues(teacherRowsToAppend);
       }
     }
 
