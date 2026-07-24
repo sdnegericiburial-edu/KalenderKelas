@@ -170,82 +170,113 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
     }
   };
 
-  // Direct Browser Print Function with dynamic @page style injection
-  const handleSystemPrint = () => {
-    const styleId = "dynamic-print-style";
-    let styleEl = document.getElementById(styleId) as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = document.createElement("style");
-      styleEl.id = styleId;
-      document.head.appendChild(styleEl);
-    }
+  // Direct Browser Print Function capturing rendered pages as high-resolution images
+  const handleSystemPrint = async () => {
+    if (!page1Ref.current || !page2Ref.current) return;
+    setIsGeneratingPdf(true);
 
-    styleEl.innerHTML = `
-      @media print {
-        @page {
-          size: ${paperSize} ${orientation};
-          margin: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
-        }
+    try {
+      const imgData1 = await toPng(page1Ref.current, {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+      });
 
-        body * {
-          visibility: hidden !important;
-        }
+      const imgData2 = await toPng(page2Ref.current, {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+      });
 
-        #pdf-page-1, #pdf-page-1 *,
-        #pdf-page-2, #pdf-page-2 * {
-          visibility: visible !important;
-        }
+      // Create a temporary hidden iframe for clean printing
+      const printIframe = document.createElement("iframe");
+      printIframe.style.position = "fixed";
+      printIframe.style.right = "0";
+      printIframe.style.bottom = "0";
+      printIframe.style.width = "0";
+      printIframe.style.height = "0";
+      printIframe.style.border = "0";
+      document.body.appendChild(printIframe);
 
-        html, body {
-          background: #ffffff !important;
-          color: #000000 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          width: 100% !important;
-          height: auto !important;
-          overflow: visible !important;
-        }
-
-        /* Flatten outer fixed modal containers */
-        div[class*="fixed"], div[class*="overflow-y-auto"] {
-          position: static !important;
-          inset: auto !important;
-          overflow: visible !important;
-          max-height: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          width: 100% !important;
-        }
-
-        #pdf-page-1, #pdf-page-2 {
-          position: relative !important;
-          display: block !important;
-          width: 100% !important;
-          max-width: none !important;
-          margin: 0 auto !important;
-          padding: 0 !important;
-          box-shadow: none !important;
-          border: none !important;
-          background: white !important;
-        }
-
-        #pdf-page-1 {
-          page-break-after: always !important;
-          break-after: page !important;
-        }
-
-        .no-print, nav, header, button, .print\\:hidden {
-          display: none !important;
-        }
+      const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+      if (!iframeDoc) {
+        window.print();
+        return;
       }
-    `;
 
-    setTimeout(() => {
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Cetak Kalender Pendidikan</title>
+            <style>
+              @page {
+                size: ${paperSize} ${orientation};
+                margin: ${marginTop}mm ${marginRight}mm ${marginBottom}mm ${marginLeft}mm;
+              }
+              *, *::before, *::after {
+                box-sizing: border-box;
+              }
+              html, body {
+                margin: 0;
+                padding: 0;
+                background: #ffffff;
+                width: 100%;
+                height: auto;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .print-page {
+                width: 100%;
+                page-break-after: always;
+                break-after: page;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+              }
+              .print-page:last-child {
+                page-break-after: auto;
+                break-after: auto;
+              }
+              .print-page img {
+                width: 100%;
+                height: auto;
+                max-height: 100%;
+                object-fit: contain;
+                display: block;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="print-page">
+              <img src="${imgData1}" alt="Semester 1" />
+            </div>
+            <div class="print-page">
+              <img src="${imgData2}" alt="Semester 2" />
+            </div>
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      setTimeout(() => {
+        if (printIframe.contentWindow) {
+          printIframe.contentWindow.focus();
+          printIframe.contentWindow.print();
+        }
+        setTimeout(() => {
+          if (document.body.contains(printIframe)) {
+            document.body.removeChild(printIframe);
+          }
+        }, 1000);
+      }, 400);
+    } catch (err) {
+      console.error("Gagal memproses cetak langsung:", err);
       window.print();
-    }, 100);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
@@ -284,10 +315,17 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
 
             <button
               onClick={handleSystemPrint}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-black rounded-full shadow-xs transition-colors cursor-pointer"
+              disabled={isGeneratingPdf}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-800 hover:bg-amber-900 disabled:bg-slate-300 text-white text-xs font-black rounded-full shadow-xs transition-colors cursor-pointer"
             >
-              <Printer className="w-4 h-4 stroke-[2.5]" />
-              <span>Cetak Langsung</span>
+              {isGeneratingPdf ? (
+                <span>Menyiapkan Cetak...</span>
+              ) : (
+                <>
+                  <Printer className="w-4 h-4 stroke-[2.5]" />
+                  <span>Cetak Langsung</span>
+                </>
+              )}
             </button>
 
             <button
