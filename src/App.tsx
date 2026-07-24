@@ -168,6 +168,38 @@ export default function App() {
     setTeachers((prev) => [...prev, newTeacher]);
   };
 
+  const handleUpdateTeacher = (updatedTeacher: TeacherUser) => {
+    setTeachers((prev) =>
+      prev.map((t) => (t.id === updatedTeacher.id ? updatedTeacher : t))
+    );
+
+    if (updatedTeacher.id === activeTeacher.id) {
+      setActiveTeacher(updatedTeacher);
+      setSchoolInfo((prev) => ({
+        ...prev,
+        teacherName: updatedTeacher.name,
+        teacherNip: updatedTeacher.nip,
+        className: updatedTeacher.className,
+        schoolName: updatedTeacher.schoolName,
+      }));
+    }
+  };
+
+  const handleDeleteTeacher = (teacherId: string) => {
+    if (teachers.length <= 1) return;
+
+    const remaining = teachers.filter((t) => t.id !== teacherId);
+    setTeachers(remaining);
+
+    localStorage.removeItem(`kalender_sd_info_${teacherId}`);
+    localStorage.removeItem(`kalender_sd_events_${teacherId}`);
+
+    if (activeTeacher.id === teacherId) {
+      const newActive = remaining[0];
+      handleSelectTeacher(newActive);
+    }
+  };
+
   // Active View Tab State
   const [activeView, setActiveView] = useState<ViewMode>("sheet");
 
@@ -373,6 +405,8 @@ export default function App() {
         activeTeacher={activeTeacher}
         onSelectTeacher={handleSelectTeacher}
         onAddTeacher={handleAddTeacher}
+        onUpdateTeacher={handleUpdateTeacher}
+        onDeleteTeacher={handleDeleteTeacher}
       />
 
       <SchoolSettingsModal
