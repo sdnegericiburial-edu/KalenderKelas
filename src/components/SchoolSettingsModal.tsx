@@ -50,16 +50,50 @@ export const SchoolSettingsModal: React.FC<SchoolSettingsModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Ukuran gambar terlalu besar! Maksimal 2MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ukuran gambar terlalu besar! Maksimal 5MB.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      if (evt.target?.result) {
-        setFormData({ ...formData, schoolLogoUrl: evt.target.result as string });
-      }
+      const dataUrl = evt.target?.result as string;
+      if (!dataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 250;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/png", 0.85);
+          setFormData((prev) => ({ ...prev, schoolLogoUrl: compressed }));
+        } else {
+          setFormData((prev) => ({ ...prev, schoolLogoUrl: dataUrl }));
+        }
+      };
+      img.onerror = () => {
+        setFormData((prev) => ({ ...prev, schoolLogoUrl: dataUrl }));
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };

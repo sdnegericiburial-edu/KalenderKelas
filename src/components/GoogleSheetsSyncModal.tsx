@@ -149,9 +149,18 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
     setStatusMessage({ type: "info", text: "Mengirim data ke Google Sheets..." });
 
     try {
+      // Pastikan logo tidak melebihi 45.000 karakter agar tidak melebihi batas sel Google Sheets (50.000)
+      const sanitizedSchoolInfo = {
+        ...schoolInfo,
+        schoolLogoUrl:
+          schoolInfo.schoolLogoUrl && schoolInfo.schoolLogoUrl.length > 45000
+            ? schoolInfo.schoolLogoUrl.substring(0, 45000)
+            : schoolInfo.schoolLogoUrl,
+      };
+
       const payload = {
         action: "save",
-        schoolInfo: schoolInfo,
+        schoolInfo: sanitizedSchoolInfo,
         events: events,
         categories: categories,
         teachers: teachers,

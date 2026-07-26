@@ -320,6 +320,17 @@ function clearDataRows(sheet) {
   }
 }
 
+// Helper memastikan nilai teks sel tidak melebihi batas 50.000 karakter sel Google Sheets
+function safeCellVal(val, maxLen) {
+  if (val === null || val === undefined) return "";
+  var str = String(val);
+  var limit = maxLen || 48000;
+  if (str.length > limit) {
+    return str.substring(0, limit);
+  }
+  return str;
+}
+
 // 5. ENDPOINT POST (Simpan Data + Auto Tambah / Hapus Sheet Kelas)
 function doPost(e) {
   try {
@@ -332,17 +343,17 @@ function doPost(e) {
       var sheetSettings = ss.getSheetByName("SchoolSettings") || ss.insertSheet("SchoolSettings");
       clearDataRows(sheetSettings);
       sheetSettings.getRange(2, 1, 1, 11).setValues([[
-        s.schoolName || "",
-        s.className || "",
-        s.academicYear || "",
+        safeCellVal(s.schoolName),
+        safeCellVal(s.className),
+        safeCellVal(s.academicYear),
         s.startYear || 2026,
         s.endYear || 2027,
-        s.principalName || "",
-        s.principalNip || "",
-        s.teacherName || "",
-        s.teacherNip || "",
-        s.city || "",
-        s.schoolLogoUrl || ""
+        safeCellVal(s.principalName),
+        safeCellVal(s.principalNip),
+        safeCellVal(s.teacherName),
+        safeCellVal(s.teacherNip),
+        safeCellVal(s.city),
+        safeCellVal(s.schoolLogoUrl, 45000)
       ]]);
     }
 

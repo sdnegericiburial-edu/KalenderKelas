@@ -208,9 +208,18 @@ export default function App() {
   ) => {
     if (!sheetsConfig.webAppUrl) return;
     try {
+      const infoToSync = overrideSchoolInfo || schoolInfo;
+      const sanitizedSchoolInfo = {
+        ...infoToSync,
+        schoolLogoUrl:
+          infoToSync.schoolLogoUrl && infoToSync.schoolLogoUrl.length > 45000
+            ? infoToSync.schoolLogoUrl.substring(0, 45000)
+            : infoToSync.schoolLogoUrl,
+      };
+
       const payload = {
         action: "save",
-        schoolInfo: overrideSchoolInfo || schoolInfo,
+        schoolInfo: sanitizedSchoolInfo,
         events: overrideEvents || events,
         categories: overrideCategories || categories,
         teachers: overrideTeachers || teachers,
