@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { SchoolInfo, CalendarEvent, CategoryType } from "../types";
 import { CATEGORIES } from "../data/initialData";
-import { formatDateRangeIndonesian, getCategoryInfo } from "../utils/calendarUtils";
+import { formatDateRangeIndonesian, getCategoryInfo, ACADEMIC_YEAR_OPTIONS, parseAcademicYear } from "../utils/calendarUtils";
 import { Search, Filter, Plus, Edit2, Trash2, Calendar, FileText } from "lucide-react";
 
 interface AgendaListViewProps {
@@ -22,6 +22,7 @@ export const AgendaListView: React.FC<AgendaListViewProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [semesterFilter, setSemesterFilter] = useState<string>("all");
+  const [academicYearFilter, setAcademicYearFilter] = useState<string>("current");
 
   const filteredEvents = events.filter((evt) => {
     // Search matching
@@ -36,7 +37,18 @@ export const AgendaListView: React.FC<AgendaListViewProps> = ({
     const matchesSemester =
       semesterFilter === "all" || String(evt.semester) === semesterFilter;
 
-    return matchesSearch && matchesCategory && matchesSemester;
+    // Academic Year matching
+    let matchesYear = true;
+    if (academicYearFilter === "current") {
+      const sY = schoolInfo.startYear || 2026;
+      const eY = schoolInfo.endYear || 2027;
+      matchesYear = evt.startDate >= `${sY}-07-01` && evt.startDate <= `${eY}-06-30`;
+    } else if (academicYearFilter !== "all") {
+      const { startYear: sY, endYear: eY } = parseAcademicYear(academicYearFilter);
+      matchesYear = evt.startDate >= `${sY}-07-01` && evt.startDate <= `${eY}-06-30`;
+    }
+
+    return matchesSearch && matchesCategory && matchesSemester && matchesYear;
   });
 
   // Sort by start date
@@ -73,7 +85,7 @@ export const AgendaListView: React.FC<AgendaListViewProps> = ({
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="bg-white p-4 rounded-3xl shadow-sm border-2 border-yellow-200 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="bg-white p-4 rounded-3xl shadow-sm border-2 border-yellow-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           
           {/* Search Input */}
           <div className="relative">
@@ -85,6 +97,24 @@ export const AgendaListView: React.FC<AgendaListViewProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-yellow-50/50 border-2 border-yellow-200 rounded-full text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
+          </div>
+
+          {/* Academic Year Filter */}
+          <div className="relative">
+            <Calendar className="w-4 h-4 text-amber-700 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <select
+              value={academicYearFilter}
+              onChange={(e) => setAcademicYearFilter(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-yellow-50/50 border-2 border-yellow-200 rounded-full text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+            >
+              <option value="current">TP Saat Ini ({schoolInfo.academicYear})</option>
+              <option value="all">Semua Tahun Ajaran</option>
+              {ACADEMIC_YEAR_OPTIONS.map((yr) => (
+                <option key={yr} value={yr}>
+                  Tahun Ajaran {yr}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Category Filter */}

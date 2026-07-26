@@ -1,5 +1,6 @@
 import React from "react";
 import { ViewMode, SchoolInfo, TeacherUser } from "../types";
+import { ACADEMIC_YEAR_OPTIONS } from "../utils/calendarUtils";
 import {
   CalendarDays,
   Calendar,
@@ -14,6 +15,7 @@ import {
   FileSpreadsheet,
   UserCheck,
   Tag,
+  ChevronDown,
 } from "lucide-react";
 
 interface HeaderBarProps {
@@ -21,6 +23,7 @@ interface HeaderBarProps {
   activeTeacher: TeacherUser;
   activeView: ViewMode;
   onViewChange: (view: ViewMode) => void;
+  onAcademicYearChange?: (academicYear: string) => void;
   onOpenSettings: () => void;
   onOpenCategoryManager?: () => void;
   onOpenSheetsSync?: () => void;
@@ -38,6 +41,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   activeTeacher,
   activeView,
   onViewChange,
+  onAcademicYearChange,
   onOpenSettings,
   onOpenCategoryManager,
   onOpenSheetsSync,
@@ -70,13 +74,29 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
               )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-black text-slate-900 tracking-tight">
                   Kalender Kegiatan Kelas SD
                 </h1>
-                <span className="bg-yellow-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full border-2 border-yellow-200">
-                  {schoolInfo.academicYear}
-                </span>
+                
+                {/* Academic Year Filter Selector */}
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={schoolInfo.academicYear}
+                    onChange={(e) => onAcademicYearChange && onAcademicYearChange(e.target.value)}
+                    className="bg-yellow-100 hover:bg-yellow-200 text-amber-950 text-xs font-black pl-3 pr-7 py-1 rounded-full border-2 border-yellow-300 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-400 shadow-2xs transition-colors"
+                    title="Pilih / Filter Tahun Ajaran"
+                  >
+                    {Array.from(new Set([schoolInfo.academicYear, ...ACADEMIC_YEAR_OPTIONS]))
+                      .filter(Boolean)
+                      .map((year) => (
+                        <option key={year} value={year}>
+                          TP {year}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-amber-900 absolute right-2 pointer-events-none stroke-[3]" />
+                </div>
               </div>
               <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                 <School className="w-3.5 h-3.5 text-pink-500" />

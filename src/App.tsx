@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { SchoolInfo, CalendarEvent, ViewMode, TeacherUser, EventCategory } from "./types";
 import { DEFAULT_SCHOOL_INFO, DEFAULT_SCHOOL_LOGO_URL, INITIAL_EVENTS, CATEGORIES } from "./data/initialData";
-import { downloadFile, exportEventsToCSV } from "./utils/calendarUtils";
+import {
+  downloadFile,
+  exportEventsToCSV,
+  parseAcademicYear,
+  generateDefaultEventsForAcademicYear,
+} from "./utils/calendarUtils";
 
 import { HeaderBar } from "./components/HeaderBar";
 import { CalendarSheetView } from "./components/CalendarSheetView";
@@ -247,6 +252,39 @@ export default function App() {
     } catch (err) {
       console.error("Gagal sinkronisasi otomatis ke Google Sheets:", err);
     }
+  };
+
+  // Academic Year Handler
+  const handleAcademicYearChange = (newAcademicYear: string) => {
+    const { startYear, endYear } = parseAcademicYear(newAcademicYear);
+
+    const updatedSchoolInfo: SchoolInfo = {
+      ...schoolInfo,
+      academicYear: newAcademicYear,
+      startYear,
+      endYear,
+    };
+
+    setSchoolInfo(updatedSchoolInfo);
+
+    const updatedTeachers = teachers.map((t) =>
+      t.id === activeTeacher.id ? { ...t, academicYear: newAcademicYear } : t
+    );
+    setTeachers(updatedTeachers);
+    setActiveTeacher((prev) => ({ ...prev, academicYear: newAcademicYear }));
+
+    syncAllDataToSheets(updatedSchoolInfo, undefined, undefined, updatedTeachers);
+  };
+
+  // Auto-generate standard template events for a given target academic year
+  const handleGenerateTemplateForYear = (targetStartYear: number) => {
+    const newEvents = generateDefaultEventsForAcademicYear(targetStartYear, INITIAL_EVENTS);
+    const existingKeys = new Set(events.map((e) => `${e.startDate}_${e.title}`));
+    const eventsToAdd = newEvents.filter((e) => !existingKeys.has(`${e.startDate}_${e.title}`));
+
+    const updatedEvents = ensureUniqueEventIds([...events, ...eventsToAdd]);
+    setEvents(updatedEvents);
+    syncAllDataToSheets(undefined, updatedEvents);
   };
 
   const handleAddTeacher = (newTeacher: TeacherUser) => {
@@ -512,6 +550,7 @@ export default function App() {
         activeTeacher={activeTeacher}
         activeView={activeView}
         onViewChange={setActiveView}
+        onAcademicYearChange={handleAcademicYearChange}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenCategoryManager={() => setIsCategoryManagerOpen(true)}
         onOpenSheetsSync={() => setIsSheetsSyncOpen(true)}
@@ -534,6 +573,8 @@ export default function App() {
             onEditEvent={handleOpenEditEvent}
             onDeleteEvent={handleDeleteEvent}
             onAddEvent={() => handleOpenAddEvent()}
+            onAcademicYearChange={handleAcademicYearChange}
+            onGenerateTemplateForYear={handleGenerateTemplateForYear}
           />
         )}
 
@@ -613,6 +654,7 @@ export default function App() {
         isOpen={isEventFormOpen}
         eventToEdit={eventToEdit}
         defaultDate={defaultDateForNewEvent}
+        academicYear={schoolInfo.academicYear}
         categories={categories}
         activeClassName={activeClassName}
         availableClasses={availableClasses}

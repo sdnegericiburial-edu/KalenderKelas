@@ -7,6 +7,7 @@ interface EventFormModalProps {
   isOpen: boolean;
   eventToEdit: CalendarEvent | null;
   defaultDate?: string;
+  academicYear?: string;
   categories?: EventCategory[];
   activeClassName?: string;
   availableClasses?: string[];
@@ -18,6 +19,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   isOpen,
   eventToEdit,
   defaultDate,
+  academicYear,
   categories = DEFAULT_CATEGORIES,
   activeClassName,
   availableClasses = [],
@@ -32,8 +34,20 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   const [category, setCategory] = useState<CategoryType>("kegiatan_sekolah");
   const [color, setColor] = useState("#f97316");
   const [semester, setSemester] = useState<1 | 2>(1);
-  const [targetClass, setTargetClass] = useState<string>(activeClassName || "Kelas 5-A");
+  const [targetClass, setTargetClass] = useState<string>(activeClassName || "Kelas 4");
   const [description, setDescription] = useState("");
+
+  const handleStartDateChange = (newDate: string) => {
+    setStartDate(newDate);
+    if (newDate > endDate) {
+      setEndDate(newDate);
+    }
+    const parts = newDate.split("-").map(Number);
+    if (parts.length >= 2) {
+      const month = parts[1];
+      setSemester(month >= 7 ? 1 : 2);
+    }
+  };
 
   useEffect(() => {
     if (eventToEdit) {

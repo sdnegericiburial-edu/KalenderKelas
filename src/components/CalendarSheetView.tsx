@@ -7,9 +7,10 @@ import {
   generateMonthGrid,
   formatDateRangeIndonesian,
   getCategoryInfo,
+  ACADEMIC_YEAR_OPTIONS,
   DayCell,
 } from "../utils/calendarUtils";
-import { Edit2, Trash2, Plus, Info } from "lucide-react";
+import { Edit2, Trash2, Plus, Info, ChevronLeft, ChevronRight, Calendar, Sparkles } from "lucide-react";
 
 interface CalendarSheetViewProps {
   schoolInfo: SchoolInfo;
@@ -18,6 +19,8 @@ interface CalendarSheetViewProps {
   onEditEvent: (event: CalendarEvent) => void;
   onDeleteEvent: (eventId: string) => void;
   onAddEvent: (defaultDate?: string) => void;
+  onAcademicYearChange?: (academicYear: string) => void;
+  onGenerateTemplateForYear?: (startYear: number) => void;
 }
 
 export const CalendarSheetView: React.FC<CalendarSheetViewProps> = ({
@@ -27,11 +30,17 @@ export const CalendarSheetView: React.FC<CalendarSheetViewProps> = ({
   onEditEvent,
   onDeleteEvent,
   onAddEvent,
+  onAcademicYearChange,
+  onGenerateTemplateForYear,
 }) => {
-  const startYear = schoolInfo.startYear || 2025;
-  const endYear = schoolInfo.endYear || 2026;
+  const startYear = schoolInfo.startYear || 2026;
+  const endYear = schoolInfo.endYear || 2027;
 
-  // Semester 1 Months (July 2025 - December 2025) -> Months 6 to 11
+  // Previous & Next Academic Years
+  const prevAcademicYear = `${startYear - 1}/${startYear}`;
+  const nextAcademicYear = `${endYear}/${endYear + 1}`;
+
+  // Semester 1 Months (July startYear - December startYear) -> Months 6 to 11
   const semester1Months = [
     { name: "JULI " + startYear, monthIndex: 6, year: startYear },
     { name: "AGUSTUS " + startYear, monthIndex: 7, year: startYear },
@@ -41,7 +50,7 @@ export const CalendarSheetView: React.FC<CalendarSheetViewProps> = ({
     { name: "DESEMBER " + startYear, monthIndex: 11, year: startYear },
   ];
 
-  // Semester 2 Months (January 2026 - June 2026) -> Months 0 to 5
+  // Semester 2 Months (January endYear - June endYear) -> Months 0 to 5
   const semester2Months = [
     { name: "JANUARI " + endYear, monthIndex: 0, year: endYear },
     { name: "FEBRUARI " + endYear, monthIndex: 1, year: endYear },
@@ -51,26 +60,76 @@ export const CalendarSheetView: React.FC<CalendarSheetViewProps> = ({
     { name: "JUNI " + endYear, monthIndex: 5, year: endYear },
   ];
 
-  // Group events by semester
+  // Filter events belonging to Semester 1 of this academic year
   const semester1Events = events
-    .filter((e) => e.semester === 1)
+    .filter((e) => {
+      const isS1Date = e.startDate >= `${startYear}-07-01` && e.startDate <= `${startYear}-12-31`;
+      return isS1Date || (e.semester === 1 && e.startDate.startsWith(String(startYear)));
+    })
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
+  // Filter events belonging to Semester 2 of this academic year
   const semester2Events = events
-    .filter((e) => e.semester === 2)
+    .filter((e) => {
+      const isS2Date = e.startDate >= `${endYear}-01-01` && e.startDate <= `${endYear}-06-30`;
+      return isS2Date || (e.semester === 2 && e.startDate.startsWith(String(endYear)));
+    })
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  const totalYearEvents = semester1Events.length + semester2Events.length;
 
   return (
     <div className="bg-[#FDFCF0] min-h-screen p-3 sm:p-6 font-sans">
-      <div className="max-w-[1600px] mx-auto bg-white rounded-3xl shadow-sm border-2 border-yellow-100 overflow-hidden">
+      <div className="max-w-[1600px] mx-auto bg-white rounded-3xl shadow-sm border-2 border-yellow-100 overflow-hidden space-y-0">
         
-        {/* Main Sheet Header Banner */}
-        <div className="bg-white border-b-2 border-yellow-100 p-5 sm:p-7 text-center">
+        {/* Main Sheet Header Banner with Year Navigation Controls */}
+        <div className="bg-white border-b-2 border-yellow-100 p-5 sm:p-7 text-center relative">
+          
+          {/* Quick Academic Year Navigation Switcher */}
+          <div className="flex items-center justify-between max-w-xl mx-auto mb-3 bg-yellow-50 p-1.5 rounded-full border border-yellow-200">
+            <button
+              onClick={() => onAcademicYearChange && onAcademicYearChange(prevAcademicYear)}
+              className="inline-flex items-center gap-1 text-xs font-black text-amber-900 bg-white hover:bg-yellow-100 px-3 py-1.5 rounded-full border border-yellow-300 shadow-2xs transition-colors cursor-pointer"
+              title={`Ke Tahun Pelajaran ${prevAcademicYear}`}
+            >
+              <ChevronLeft className="w-4 h-4 text-pink-600 stroke-[3]" />
+              <span>TP {prevAcademicYear}</span>
+            </button>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                Tahun Pelajaran:
+              </span>
+              <select
+                value={schoolInfo.academicYear}
+                onChange={(e) => onAcademicYearChange && onAcademicYearChange(e.target.value)}
+                className="bg-amber-400 text-slate-900 font-black text-xs px-3 py-1 rounded-full border border-amber-500 cursor-pointer focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-2xs"
+              >
+                {Array.from(new Set([schoolInfo.academicYear, ...ACADEMIC_YEAR_OPTIONS]))
+                  .filter(Boolean)
+                  .map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => onAcademicYearChange && onAcademicYearChange(nextAcademicYear)}
+              className="inline-flex items-center gap-1 text-xs font-black text-amber-900 bg-white hover:bg-yellow-100 px-3 py-1.5 rounded-full border border-yellow-300 shadow-2xs transition-colors cursor-pointer"
+              title={`Ke Tahun Pelajaran ${nextAcademicYear}`}
+            >
+              <span>TP {nextAcademicYear}</span>
+              <ChevronRight className="w-4 h-4 text-pink-600 stroke-[3]" />
+            </button>
+          </div>
+
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase tracking-tight">
             Kalender Pendidikan {schoolInfo.schoolName}
           </h1>
           <h2 className="text-base sm:text-lg font-extrabold text-amber-900/80 mt-1">
-            Tahun Pelajaran {schoolInfo.academicYear}
+            Tahun Pelajaran {schoolInfo.academicYear} (Juli {startYear} - Juni {endYear})
           </h2>
           {schoolInfo.className && (
             <p className="text-xs sm:text-sm font-black text-pink-600 mt-1 uppercase tracking-wide">
@@ -78,6 +137,41 @@ export const CalendarSheetView: React.FC<CalendarSheetViewProps> = ({
             </p>
           )}
         </div>
+
+        {/* Empty Events Banner Notice with Auto Template Generator */}
+        {totalYearEvents === 0 && (
+          <div className="bg-amber-50 border-b-2 border-amber-200 p-4 text-center flex flex-col sm:flex-row items-center justify-between gap-3 px-6">
+            <div className="flex items-center gap-2 text-left">
+              <Sparkles className="w-5 h-5 text-amber-600 shrink-0 animate-bounce" />
+              <div>
+                <p className="text-xs font-black text-amber-950">
+                  Belum ada agenda di Kalender TP {schoolInfo.academicYear}.
+                </p>
+                <p className="text-[11px] text-amber-800 font-medium">
+                  Anda bisa mengisi kegiatan manual atau langsung buat template agenda SD standar untuk tahun ini.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {onGenerateTemplateForYear && (
+                <button
+                  onClick={() => onGenerateTemplateForYear(startYear)}
+                  className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white text-xs font-black rounded-full shadow-2xs cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>+ Buat Template Agenda TP {schoolInfo.academicYear}</span>
+                </button>
+              )}
+              <button
+                onClick={() => onAddEvent(`${startYear}-07-15`)}
+                className="px-3.5 py-2 bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 text-xs font-black rounded-full cursor-pointer transition-all"
+              >
+                + Tambah Manual
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Legend / Category Color Keys Bar */}
         <div className="bg-yellow-50/60 border-b border-yellow-100 px-4 py-3 flex flex-wrap items-center justify-center gap-2.5 text-xs">

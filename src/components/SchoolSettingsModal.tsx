@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { SchoolInfo, TeacherUser, GoogleSheetsConfig } from "../types";
+import { ACADEMIC_YEAR_OPTIONS, parseAcademicYear } from "../utils/calendarUtils";
 import { X, Save, School, UserCheck, Upload, Image as ImageIcon, Trash2, Tag, FileSpreadsheet, RefreshCw, CheckCircle2 } from "lucide-react";
 
 interface SchoolSettingsModalProps {
@@ -226,23 +227,49 @@ export const SchoolSettingsModal: React.FC<SchoolSettingsModalProps> = ({
                 <label className="block text-xs font-black text-slate-700 mb-1">
                   Tahun Pelajaran
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.academicYear}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const years = val.split("/").map(Number);
-                    setFormData({
-                      ...formData,
-                      academicYear: val,
-                      startYear: years[0] || formData.startYear,
-                      endYear: years[1] || formData.endYear,
-                    });
-                  }}
-                  className="w-full px-4 py-2.5 bg-yellow-50/50 border-2 border-yellow-200 rounded-full text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  placeholder="contoh: 2025/2026"
-                />
+                <div className="flex gap-1.5">
+                  <select
+                    value={ACADEMIC_YEAR_OPTIONS.includes(formData.academicYear) ? formData.academicYear : "custom"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val !== "custom") {
+                        const { startYear, endYear } = parseAcademicYear(val);
+                        setFormData({
+                          ...formData,
+                          academicYear: val,
+                          startYear,
+                          endYear,
+                        });
+                      }
+                    }}
+                    className="px-3 py-2.5 bg-amber-100 border-2 border-amber-300 rounded-2xl text-xs font-black text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer"
+                  >
+                    {ACADEMIC_YEAR_OPTIONS.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
+                    <option value="custom">Lainnya...</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    required
+                    value={formData.academicYear}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const { startYear, endYear } = parseAcademicYear(val);
+                      setFormData({
+                        ...formData,
+                        academicYear: val,
+                        startYear,
+                        endYear,
+                      });
+                    }}
+                    className="w-full px-4 py-2.5 bg-yellow-50/50 border-2 border-yellow-200 rounded-full text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    placeholder="contoh: 2027/2028"
+                  />
+                </div>
               </div>
             </div>
 

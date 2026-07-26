@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SchoolInfo, CalendarEvent } from "../types";
 import {
   MONTH_NAMES_INDONESIAN,
@@ -24,10 +24,17 @@ export const MonthlyDetailView: React.FC<MonthlyDetailViewProps> = ({
   onEditEvent,
   onDeleteEvent,
 }) => {
-  // Start with July 2025 as standard SD academic year start
-  const startYear = schoolInfo.startYear || 2025;
+  const startYear = schoolInfo.startYear || 2026;
   const [currentYear, setCurrentYear] = useState<number>(startYear);
   const [currentMonthIndex, setCurrentMonthIndex] = useState<number>(6); // July (0-indexed = 6)
+
+  // Automatically sync view year when academic year changes
+  useEffect(() => {
+    if (schoolInfo.startYear) {
+      setCurrentYear(schoolInfo.startYear);
+      setCurrentMonthIndex(6); // Default July start of SD academic year
+    }
+  }, [schoolInfo.startYear, schoolInfo.academicYear]);
 
   const handlePrevMonth = () => {
     if (currentMonthIndex === 0) {

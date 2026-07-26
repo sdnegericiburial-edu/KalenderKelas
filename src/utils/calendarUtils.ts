@@ -193,6 +193,92 @@ export function getEventDayStyle(events: CalendarEvent[]): {
 }
 
 /**
+ * Preset Academic Years List
+ */
+export const ACADEMIC_YEAR_OPTIONS = [
+  "2023/2024",
+  "2024/2025",
+  "2025/2026",
+  "2026/2027",
+  "2027/2028",
+  "2028/2029",
+  "2029/2030",
+  "2030/2031",
+  "2031/2032",
+];
+
+/**
+ * Parse startYear and endYear from "YYYY/YYYY" string
+ */
+export function parseAcademicYear(academicYearStr: string): { startYear: number; endYear: number } {
+  if (!academicYearStr) return { startYear: 2026, endYear: 2027 };
+  const parts = academicYearStr.split("/").map((p) => parseInt(p.trim(), 10));
+  const startYear = !isNaN(parts[0]) && parts[0] > 1900 ? parts[0] : 2026;
+  const endYear = !isNaN(parts[1]) && parts[1] > 1900 ? parts[1] : startYear + 1;
+  return { startYear, endYear };
+}
+
+/**
+ * Shift an event to a new target academic start year
+ */
+export function shiftEventToAcademicYear(
+  event: CalendarEvent,
+  targetStartYear: number
+): CalendarEvent {
+  if (!event.startDate) return event;
+  const partsS = event.startDate.split("-").map(Number);
+  const partsE = (event.endDate || event.startDate).split("-").map(Number);
+
+  const sY = partsS[0] || 2026;
+  const sM = partsS[1] || 7;
+  const sD = partsS[2] || 1;
+
+  const eY = partsE[0] || sY;
+  const eM = partsE[1] || sM;
+  const eD = partsE[2] || sD;
+
+  // An event in July-Dec belongs to startYear. Jan-June belongs to endYear (= startYear + 1).
+  const eventOrigStartYear = sM >= 7 ? sY : sY - 1;
+  const yearDiff = targetStartYear - eventOrigStartYear;
+
+  const newStartYear = sY + yearDiff;
+  const newEndYear = eY + yearDiff;
+
+  const newStartDate = `${newStartYear}-${String(sM).padStart(2, "0")}-${String(sD).padStart(2, "0")}`;
+  const newEndDate = `${newEndYear}-${String(eM).padStart(2, "0")}-${String(eD).padStart(2, "0")}`;
+
+  return {
+    ...event,
+    id: `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    startDate: newStartDate,
+    endDate: newEndDate,
+  };
+}
+
+/**
+ * Generate default events for a target academic year from templates
+ */
+export function generateDefaultEventsForAcademicYear(
+  targetStartYear: number,
+  templateEvents: CalendarEvent[]
+): CalendarEvent[] {
+  return templateEvents.map((evt) => shiftEventToAcademicYear(evt, targetStartYear));
+}
+
+/**
+ * Filter events that belong to a specific academic year (July 1 startYear -> June 30 endYear)
+ */
+export function filterEventsByAcademicYear(
+  events: CalendarEvent[],
+  startYear: number,
+  endYear: number
+): CalendarEvent[] {
+  const minDate = `${startYear}-07-01`;
+  const maxDate = `${endYear}-06-30`;
+  return events.filter((e) => e.startDate >= minDate && e.startDate <= maxDate);
+}
+
+/**
  * Download text data as a file in browser
  */
 export function downloadFile(content: string, fileName: string, contentType: string) {
