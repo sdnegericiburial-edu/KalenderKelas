@@ -1,5 +1,7 @@
 import { EventCategory, CalendarEvent, SchoolInfo } from "../types";
 
+export const DEFAULT_SCHOOL_LOGO_URL = "https://lh3.googleusercontent.com/d/1RKrQMVX-taqKd6oENe_YUGbpe0XST4C8";
+
 export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
   schoolName: "SD Negeri Ciburial",
   className: "Kelas 4",
@@ -11,6 +13,7 @@ export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
   teacherName: "Siti Aminah, S.Pd.",
   teacherNip: "19850812 201001 2 015",
   city: "Kab. Bandung Barat",
+  schoolLogoUrl: DEFAULT_SCHOOL_LOGO_URL,
 };
 
 export const CATEGORIES: EventCategory[] = [

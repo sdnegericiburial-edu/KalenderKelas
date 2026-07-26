@@ -40,7 +40,7 @@ function setupDatabase() {
   formatSheetHeader(sheetSettings, settingHeaders.length, "#DB2777");
 
   var sampleSettings = [
-    ["SD NEGERI CIBURIAL", "Kelas 5-A", "2026/2027", 2026, 2027, "Carnia, S.Pd", "197112201997032002", "Budi Santoso, S.Pd.", "198506122010011005", "Kab. Bandung Barat", ""]
+    ["SD NEGERI CIBURIAL", "Kelas 5-A", "2026/2027", 2026, 2027, "Carnia, S.Pd", "197112201997032002", "Budi Santoso, S.Pd.", "198506122010011005", "Kab. Bandung Barat", "https://lh3.googleusercontent.com/d/1RKrQMVX-taqKd6oENe_YUGbpe0XST4C8"]
   ];
   sheetSettings.getRange(2, 1, sampleSettings.length, settingHeaders.length).setValues(sampleSettings);
 
@@ -255,7 +255,7 @@ function doGet(e) {
         teacherName: String(sRow[7] || ""),
         teacherNip: String(sRow[8] || ""),
         city: String(sRow[9] || ""),
-        schoolLogoUrl: String(sRow[10] || "")
+        schoolLogoUrl: String(sRow[10] || "https://lh3.googleusercontent.com/d/1RKrQMVX-taqKd6oENe_YUGbpe0XST4C8")
       };
     }
 

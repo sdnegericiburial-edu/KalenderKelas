@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { SchoolInfo, CalendarEvent, ViewMode, TeacherUser, EventCategory } from "./types";
-import { DEFAULT_SCHOOL_INFO, INITIAL_EVENTS, CATEGORIES } from "./data/initialData";
+import { DEFAULT_SCHOOL_INFO, DEFAULT_SCHOOL_LOGO_URL, INITIAL_EVENTS, CATEGORIES } from "./data/initialData";
 import { downloadFile, exportEventsToCSV } from "./utils/calendarUtils";
 
 import { HeaderBar } from "./components/HeaderBar";
@@ -96,7 +96,13 @@ export default function App() {
   // 2. School Info State (Dynamic per active teacher)
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>(() => {
     const saved = localStorage.getItem(`kalender_sd_info_${activeTeacher.id}`);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        ...parsed,
+        schoolLogoUrl: parsed.schoolLogoUrl || DEFAULT_SCHOOL_LOGO_URL,
+      };
+    }
 
     return {
       ...DEFAULT_SCHOOL_INFO,
@@ -105,6 +111,7 @@ export default function App() {
       className: activeTeacher.className,
       schoolName: activeTeacher.schoolName,
       academicYear: activeTeacher.academicYear,
+      schoolLogoUrl: DEFAULT_SCHOOL_LOGO_URL,
     };
   });
 
@@ -186,7 +193,11 @@ export default function App() {
     // Load or initialize info for selected teacher
     const savedInfo = localStorage.getItem(`kalender_sd_info_${teacher.id}`);
     if (savedInfo) {
-      setSchoolInfo(JSON.parse(savedInfo));
+      const parsed = JSON.parse(savedInfo);
+      setSchoolInfo({
+        ...parsed,
+        schoolLogoUrl: parsed.schoolLogoUrl || DEFAULT_SCHOOL_LOGO_URL,
+      });
     } else {
       setSchoolInfo({
         ...DEFAULT_SCHOOL_INFO,
@@ -195,6 +206,7 @@ export default function App() {
         className: teacher.className,
         schoolName: teacher.schoolName,
         academicYear: teacher.academicYear,
+        schoolLogoUrl: DEFAULT_SCHOOL_LOGO_URL,
       });
     }
   };
