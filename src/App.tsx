@@ -301,7 +301,14 @@ export default function App() {
       try {
         const res = await fetch(sheetsConfig.webAppUrl);
         if (!res.ok) return;
-        const data = await res.json();
+        const text = await res.text();
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          console.warn("Auto-sync load: Received HTML instead of JSON. Check Apps Script Web App permissions.");
+          return;
+        }
         if (data.status === "success") {
           if (data.schoolInfo && data.schoolInfo.schoolName) setSchoolInfo(data.schoolInfo);
           if (Array.isArray(data.events) && data.events.length > 0) setEvents(ensureUniqueEventIds(data.events));

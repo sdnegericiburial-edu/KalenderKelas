@@ -312,6 +312,14 @@ function doGet(e) {
   }
 }
 
+// Helper membersihkan isi baris data tanpa menghapus struktur baris/header (mencegah error deleteRows pada frozen header)
+function clearDataRows(sheet) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, sheet.getMaxColumns()).clearContent();
+  }
+}
+
 // 5. ENDPOINT POST (Simpan Data + Auto Tambah / Hapus Sheet Kelas)
 function doPost(e) {
   try {
@@ -322,30 +330,26 @@ function doPost(e) {
     if (postData.schoolInfo) {
       var s = postData.schoolInfo;
       var sheetSettings = ss.getSheetByName("SchoolSettings") || ss.insertSheet("SchoolSettings");
-      if (sheetSettings.getLastRow() > 1) {
-        sheetSettings.deleteRows(2, sheetSettings.getLastRow() - 1);
-      }
-      sheetSettings.appendRow([
+      clearDataRows(sheetSettings);
+      sheetSettings.getRange(2, 1, 1, 11).setValues([[
         s.schoolName || "",
         s.className || "",
         s.academicYear || "",
-        s.startYear || 2025,
-        s.endYear || 2026,
+        s.startYear || 2026,
+        s.endYear || 2027,
         s.principalName || "",
         s.principalNip || "",
         s.teacherName || "",
         s.teacherNip || "",
         s.city || "",
         s.schoolLogoUrl || ""
-      ]);
+      ]]);
     }
 
     // Update Categories
     if (postData.categories && Array.isArray(postData.categories)) {
       var sheetCategories = ss.getSheetByName("Categories") || ss.insertSheet("Categories");
-      if (sheetCategories.getLastRow() > 1) {
-        sheetCategories.deleteRows(2, sheetCategories.getLastRow() - 1);
-      }
+      clearDataRows(sheetCategories);
       var catRowsToAppend = postData.categories.map(function(c) {
         return [c.id, c.label, c.color || "#3b82f6"];
       });
@@ -357,9 +361,7 @@ function doPost(e) {
     // Update Teachers
     if (postData.teachers && Array.isArray(postData.teachers)) {
       var sheetTeachers = ss.getSheetByName("Teachers") || ss.insertSheet("Teachers");
-      if (sheetTeachers.getLastRow() > 1) {
-        sheetTeachers.deleteRows(2, sheetTeachers.getLastRow() - 1);
-      }
+      clearDataRows(sheetTeachers);
       var teacherRowsToAppend = postData.teachers.map(function(t) {
         return [
           t.id,
@@ -392,9 +394,7 @@ function doPost(e) {
         var sheetAgenda = ss.getSheetByName(sheetName);
 
         if (sheetAgenda) {
-          if (sheetAgenda.getLastRow() > 1) {
-            sheetAgenda.deleteRows(2, sheetAgenda.getLastRow() - 1);
-          }
+          clearDataRows(sheetAgenda);
 
           // Filter events untuk kelas ini
           var classEvents = postData.events.filter(function(ev) {

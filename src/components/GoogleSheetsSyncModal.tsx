@@ -87,7 +87,15 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
         throw new Error(`HTTP Error ${response.status}: Silakan periksa URL Web App Anda.`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          "Respon berupa HTML/Halaman Google (bukan JSON). Pastikan Deployment Web App di Apps Script diatur ke 'Anyone' (Siapa saja) dan URL berakhiran /exec."
+        );
+      }
 
       if (data.status === "success") {
         const importedSchool = data.schoolInfo && data.schoolInfo.schoolName ? data.schoolInfo : undefined;
@@ -161,7 +169,15 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
         throw new Error(`HTTP Error ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          "Respon berupa HTML/Halaman Google (bukan JSON). Pastikan Deployment Web App di Apps Script diatur ke 'Anyone' (Siapa saja) dan URL berakhiran /exec."
+        );
+      }
 
       if (data.status === "success") {
         const now = new Date().toLocaleString("id-ID");
